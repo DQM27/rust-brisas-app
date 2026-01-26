@@ -15,7 +15,9 @@
 		listVisitantes,
 		createVisitante,
 		updateVisitante,
-		deleteVisitante
+		deleteVisitante,
+		restoreVisitante,
+		getArchivedVisitantes
 	} from '$lib/logic/visitante/visitanteService';
 	import { getVisitanteColumns } from '$lib/logic/visitante/visitanteColumns';
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
@@ -65,6 +67,7 @@
 	let error = $state<string | null>(null);
 	let selectedRows = $state<VisitanteResponse[]>([]);
 	let searchTerm = $state('');
+	let showArchived = $state(false);
 
 	// Modals State
 	let showModal = $state(false);
@@ -114,7 +117,7 @@
 		loading = true;
 		error = null;
 		try {
-			const res = await listVisitantes();
+			const res = showArchived ? await getArchivedVisitantes() : await listVisitantes();
 			if (res.ok) {
 				visitantes = res.data.map((v: any) => ({
 					...v,
@@ -181,7 +184,7 @@
 		}
 	}
 
-	// Delete Handlers
+	// Delete/Restore Handlers
 	async function confirmDelete(visitante: VisitanteResponse) {
 		if (
 			!confirm(
@@ -192,6 +195,16 @@
 		const res = await deleteVisitante(visitante.id);
 		if (res.ok) {
 			toast.success('Visitante eliminado');
+			loadData();
+		} else {
+			toast.error(res.error);
+		}
+	}
+
+	async function handleRestore(visitante: VisitanteResponse) {
+		const res = await restoreVisitante(visitante.id);
+		if (res.ok) {
+			toast.success('Visitante restaurado');
 			loadData();
 		} else {
 			toast.error(res.error);
@@ -242,6 +255,11 @@
 				gridWrapper.redraw(true);
 			}, 50);
 		}
+	}
+
+	function handleToggleArchived() {
+		showArchived = !showArchived;
+		loadData();
 	}
 
 	// Lifecycle
@@ -297,28 +315,54 @@
 					</button>
 
 					{#if selectedRows.length === 1}
-						<button
-							onclick={() => openFormModal(selectedRows[0])}
-							class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md hover:bg-amber-500/20 text-sm font-medium transition-colors"
-						>
-							<Pencil size={14} /> Editar
-						</button>
+						{#if showArchived}
+							<button
+								onclick={() => handleRestore(selectedRows[0])}
+								class="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-md hover:bg-teal-500/20 text-sm font-medium transition-colors"
+							>
+								<Trash2 size={14} /> Restaurar
+							</button>
+						{:else}
+							<button
+								onclick={() => openFormModal(selectedRows[0])}
+								class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md hover:bg-amber-500/20 text-sm font-medium transition-colors"
+							>
+								<Pencil size={14} /> Editar
+							</button>
+						{/if}
 					{/if}
 
-					<button
-						onclick={() => handleDeleteMultiple(selectedRows)}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
-					>
-						<Trash2 size={14} /> Eliminar ({selectedRows.length})
-					</button>
+					{#if !showArchived}
+						<button
+							onclick={() => handleDeleteMultiple(selectedRows)}
+							class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
+						>
+							<Trash2 size={14} /> Eliminar ({selectedRows.length})
+						</button>
+					{/if}
 				</div>
 			{:else}
-				<button
-					onclick={() => openFormModal(null)}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
-				>
-					<Plus size={14} /> Nuevo Visitante
-				</button>
+				<div class="flex items-center gap-2">
+					<button
+						onclick={handleToggleArchived}
+						class="flex items-center gap-1.5 px-3 py-1.5 {showArchived
+							? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+							: 'bg-surface-3 text-secondary border-surface'} border rounded-md hover:bg-surface-4 text-sm font-medium transition-colors"
+						title={showArchived ? 'Ver Activos' : 'Ver Archivados'}
+					>
+						<Trash2 size={14} />
+						{showArchived ? 'Ver Activos' : 'Papelera'}
+					</button>
+
+					{#if !showArchived}
+						<button
+							onclick={() => openFormModal(null)}
+							class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+						>
+							<Plus size={14} /> Nuevo Visitante
+						</button>
+					{/if}
+				</div>
 			{/if}
 		{/snippet}
 	</GridToolbar>

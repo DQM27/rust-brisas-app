@@ -65,6 +65,7 @@
 	let isUpdatingStatus = false;
 	let selectedRows = $state<UserResponse[]>([]);
 	let searchTerm = $state('');
+	let showArchived = $state(false);
 
 	// Modals
 	let showModal = $state(false);
@@ -95,7 +96,6 @@
 			if ($activeTabId !== tabId) return;
 
 			const canCreate = $currentUser && can($currentUser, 'CREATE_USER');
-			const canDelete = $currentUser && can($currentUser, 'DELETE_USER');
 
 			switch (event.command) {
 				case 'create':
@@ -135,7 +135,9 @@
 		loading = true;
 		error = '';
 		try {
-			const result = await userService.fetchAllUsers();
+			const result = showArchived
+				? await userService.fetchArchivedUsers()
+				: await userService.fetchAllUsers();
 			if (result.ok) {
 				users = result.data;
 				if (gridWrapper) {
@@ -148,6 +150,11 @@
 			error = 'Error al cargar usuarios';
 		}
 		loading = false;
+	}
+
+	function handleToggleArchived() {
+		showArchived = !showArchived;
+		loadUsers();
 	}
 
 	// ==========================================
@@ -250,6 +257,17 @@
 		const result = await userService.deleteUser(user.id);
 		if (result.ok) {
 			toast.success('Usuario eliminado', { id: toastId });
+			loadUsers();
+		} else {
+			toast.error(result.error, { id: toastId });
+		}
+	}
+
+	async function handleRestoreUser(user: UserResponse) {
+		const toastId = toast.loading('Restaurando...');
+		const result = await userService.restoreUser(user.id);
+		if (result.ok) {
+			toast.success('Usuario restaurado', { id: toastId });
 			loadUsers();
 		} else {
 			toast.error(result.error, { id: toastId });
@@ -380,7 +398,14 @@
 
 					{#if selectedRows.length === 1}
 						{@const selected = selectedRows[0]}
-						{#if $currentUser && can($currentUser, 'UPDATE_USER_PROFILE', selected)}
+						{#if showArchived}
+							<button
+								onclick={() => handleRestoreUser(selected)}
+								class="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-md hover:bg-teal-500/20 text-sm font-medium transition-colors"
+							>
+								<Trash2 size={14} /> Restaurar
+							</button>
+						{:else if $currentUser && can($currentUser, 'UPDATE_USER_PROFILE', selected)}
 							<button
 								onclick={() => openModal(selected)}
 								class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md hover:bg-amber-500/20 text-sm font-medium transition-colors"
@@ -390,7 +415,7 @@
 						{/if}
 					{/if}
 
-					{#if $currentUser && can($currentUser, 'DELETE_USER')}
+					{#if !showArchived && $currentUser && can($currentUser, 'DELETE_USER')}
 						<button
 							onclick={() => handleDeleteMultiple(selectedRows)}
 							class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
@@ -399,13 +424,28 @@
 						</button>
 					{/if}
 				</div>
-			{:else if $currentUser && can($currentUser, 'CREATE_USER')}
-				<button
-					onclick={() => openModal(null)}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
-				>
-					<UserPlus size={14} /> Nuevo Usuario
-				</button>
+			{:else}
+				<div class="flex items-center gap-2">
+					<button
+						onclick={handleToggleArchived}
+						class="flex items-center gap-1.5 px-3 py-1.5 {showArchived
+							? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+							: 'bg-surface-3 text-secondary border-surface'} border rounded-md hover:bg-surface-4 text-sm font-medium transition-colors"
+						title={showArchived ? 'Ver Activos' : 'Ver Archivados'}
+					>
+						<Trash2 size={14} />
+						{showArchived ? 'Ver Activos' : 'Papelera'}
+					</button>
+
+					{#if !showArchived && $currentUser && can($currentUser, 'CREATE_USER')}
+						<button
+							onclick={() => openModal(null)}
+							class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+						>
+							<UserPlus size={14} /> Nuevo Usuario
+						</button>
+					{/if}
+				</div>
 			{/if}
 		{/snippet}
 	</GridToolbar>
@@ -470,6 +510,3 @@
 		display: none !important;
 	}
 </style>
-
-
-

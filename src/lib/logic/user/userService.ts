@@ -134,6 +134,32 @@ export async function deleteUser(id: string): Promise<ServiceResult<void>> {
 	}
 }
 
+/**
+ * Restaurar usuario
+ */
+export async function restoreUser(id: string): Promise<ServiceResult<UserResponse>> {
+	try {
+		const result = await users.restore(id);
+		return { ok: true, data: result };
+	} catch (err: unknown) {
+		console.error('Error al restaurar usuario:', err);
+		return { ok: false, error: parseError(err) };
+	}
+}
+
+/**
+ * Cargar usuarios archivados
+ */
+export async function fetchArchivedUsers(): Promise<ServiceResult<UserResponse[]>> {
+	try {
+		const result = await users.listArchived();
+		return { ok: true, data: result.users };
+	} catch (err: unknown) {
+		console.error('Error al cargar usuarios archivados:', err);
+		return { ok: false, error: parseError(err) };
+	}
+}
+
 // ============================================
 // AVATAR OPERATIONS
 // ============================================

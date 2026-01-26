@@ -11,6 +11,8 @@ macro_rules! register_handlers {
             commands::user_commands::update_user,
             commands::user_commands::delete_user,
             commands::user_commands::login,
+            commands::user_commands::restore_user,
+            commands::user_commands::get_archived_users,
             commands::user_commands::change_password,
             commands::user_commands::upload_user_avatar,
             commands::user_commands::get_user_avatar,

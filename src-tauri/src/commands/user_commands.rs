@@ -54,6 +54,24 @@ pub async fn delete_user(
 }
 
 #[tauri::command]
+pub async fn restore_user(
+    session: State<'_, SessionState>,
+    search: State<'_, Arc<SearchService>>,
+    id: String,
+) -> Result<UserResponse, UserError> {
+    require_perm!(session, "users:delete", format!("Restaurando usuario ID: {}", id))?;
+    user_service::restore_user(&search, id).await
+}
+
+#[tauri::command]
+pub async fn get_archived_users(
+    session: State<'_, SessionState>,
+) -> Result<UserListResponse, UserError> {
+    require_perm!(session, "users:read", "Consultando archivo de usuarios")?;
+    user_service::get_archived_users().await
+}
+
+#[tauri::command]
 pub async fn get_user_by_id(
     session: State<'_, SessionState>,
     id: String,

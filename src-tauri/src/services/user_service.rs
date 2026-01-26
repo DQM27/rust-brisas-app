@@ -436,6 +436,51 @@ pub async fn delete_user(
     Ok(())
 }
 
+pub async fn restore_user(
+    search_service: &Arc<SearchService>,
+    id_str: String,
+) -> Result<UserResponse, UserError> {
+    let id_thing = parse_user_id(&id_str);
+
+    let user = db::restore(&id_thing)
+        .await
+        .map_err(|e| {
+            error!("Error al restaurar el usuario {id_str}: {e}");
+            UserError::Database(e.to_string())
+        })?
+        .ok_or(UserError::NotFound)?;
+
+    if let Err(e) = search_service.add_user(&user).await {
+        warn!("No se pudo re-indexar al usuario tras restauración: {e}");
+    }
+
+    get_user_by_id(&id_str).await
+}
+
+pub async fn get_archived_users() -> Result<UserListResponse, UserError> {
+    let users =
+        db::find_archived_fetched().await.map_err(|e| UserError::Database(e.to_string()))?;
+
+    let mut user_responses = Vec::new();
+    for user in users {
+        let permissions = match &user.role {
+            Some(role) => surrealdb_authorization::get_role_permissions(&role.id.to_string())
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .collect(),
+            None => vec![],
+        };
+
+        user_responses.push(UserResponse::from_fetched(user, permissions));
+    }
+
+    let total = user_responses.len();
+    let activos = user_responses.iter().filter(|u| u.is_active).count();
+
+    Ok(UserListResponse { users: user_responses, total, activos })
+}
+
 /// Cambia la contraseña de un usuario, verificando la contraseña actual si es proporcionada.
 pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Result<(), UserError> {
     let user_resp = get_user_by_id(&id_str).await?;
@@ -530,4 +575,3 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
 // --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
-

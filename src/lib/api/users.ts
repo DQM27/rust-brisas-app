@@ -27,6 +27,14 @@ export const users = {
 		await invoke('delete_user', { id });
 	},
 
+	restore: async (id: string): Promise<UserResponse> => {
+		return await invoke<UserResponse>('restore_user', { id });
+	},
+
+	listArchived: async (): Promise<UserListResponse> => {
+		return await invoke<UserListResponse>('get_archived_users');
+	},
+
 	uploadAvatar: async (userId: string, filePath: string): Promise<string> => {
 		return await invoke<string>('upload_user_avatar', { userId, filePath });
 	},

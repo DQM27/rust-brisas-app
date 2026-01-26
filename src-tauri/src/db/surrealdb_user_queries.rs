@@ -128,7 +128,8 @@ pub async fn insert(dto: UserCreateDTO) -> Result<User, SurrealDbError> {
 pub async fn find_by_id(id: &RecordId) -> Result<Option<User>, SurrealDbError> {
     debug!("🔍 Buscando usuario por ID: {id}");
     let db = get_db().await?;
-    let mut result = db.query("SELECT * FROM $id").bind(("id", id.clone())).await?;
+    let mut result =
+        db.query("SELECT * FROM $id WHERE deleted_at IS NONE").bind(("id", id.clone())).await?;
     let user: Option<User> = result.take(0)?;
     debug!("🔍 Resultado: encontrado={}", user.is_some());
     Ok(user)
@@ -138,7 +139,10 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<User>, SurrealDbError> {
 pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<UserFetched>, SurrealDbError> {
     debug!("🔍 Buscando usuario (fetched) por ID: {id}");
     let db = get_db().await?;
-    let mut result = db.query("SELECT * FROM $id FETCH role").bind(("id", id.clone())).await?;
+    let mut result = db
+        .query("SELECT * FROM $id WHERE deleted_at IS NONE FETCH role")
+        .bind(("id", id.clone()))
+        .await?;
     Ok(result.take(0)?)
 }
 
@@ -147,7 +151,7 @@ pub async fn find_by_email(email: &str) -> Result<Option<User>, SurrealDbError> 
     debug!("🔍 Buscando usuario por email: {email}");
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM user WHERE email = $email LIMIT 1")
+        .query("SELECT * FROM user WHERE email = $email AND deleted_at IS NONE LIMIT 1")
         .bind(("email", email.to_string()))
         .await?;
     Ok(result.take(0)?)
@@ -161,7 +165,9 @@ pub async fn find_by_email_with_password(
     debug!("🔐 Autenticando usuario: {email}");
 
     let mut result = db
-        .query("SELECT *, password_hash FROM user WHERE email = $email LIMIT 1")
+        .query(
+            "SELECT *, password_hash FROM user WHERE email = $email AND deleted_at IS NONE LIMIT 1",
+        )
         .bind(("email", email.to_string()))
         .await?;
 
@@ -219,18 +225,36 @@ pub async fn update_password(id: &RecordId, password_hash: &str) -> Result<(), S
 
 /// Elimina un usuario del sistema.
 pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
-    warn!("🗑️ Eliminando usuario: {id}");
+    warn!("🗑️ Archivando usuario (Soft Delete): {id}");
     let db = get_db().await?;
-    db.query("DELETE $id").bind(("id", id.clone())).await?;
-    warn!("🗑️ Usuario eliminado: {id}");
+    db.query("UPDATE $id SET deleted_at = time::now()").bind(("id", id.clone())).await?;
+    warn!("🗑️ Usuario archivado: {id}");
     Ok(())
+}
+
+pub async fn restore(id: &RecordId) -> Result<Option<User>, SurrealDbError> {
+    debug!("♻️ Restaurando usuario: {id}");
+    let db = get_db().await?;
+    let updated: Option<User> =
+        db.query("UPDATE $id SET deleted_at = NONE").bind(("id", id.clone())).await?.take(0)?;
+    Ok(updated)
+}
+
+pub async fn find_archived_fetched() -> Result<Vec<UserFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db
+        .query(
+            "SELECT * FROM user WHERE deleted_at IS NOT NONE ORDER BY deleted_at DESC FETCH role",
+        )
+        .await?;
+    Ok(result.take(0)?)
 }
 
 pub async fn find_all(exclude_id: Option<&RecordId>) -> Result<Vec<User>, SurrealDbError> {
     let db = get_db().await?;
-    let mut query = "SELECT * FROM user".to_string();
+    let mut query = "SELECT * FROM user WHERE deleted_at IS NONE".to_string();
     if exclude_id.is_some() {
-        query.push_str(" WHERE id != $exclude_id");
+        query.push_str(" AND id != $exclude_id");
     }
     query.push_str(" ORDER BY created_at DESC");
 
@@ -247,9 +271,9 @@ pub async fn find_all_fetched(
     exclude_id: Option<&RecordId>,
 ) -> Result<Vec<UserFetched>, SurrealDbError> {
     let db = get_db().await?;
-    let mut query = "SELECT * FROM user".to_string();
+    let mut query = "SELECT * FROM user WHERE deleted_at IS NONE".to_string();
     if exclude_id.is_some() {
-        query.push_str(" WHERE id != $exclude_id");
+        query.push_str(" AND id != $exclude_id");
     }
     query.push_str(" ORDER BY created_at DESC FETCH role");
 
@@ -265,7 +289,7 @@ pub async fn find_all_fetched(
 pub async fn count_by_email(email: &str) -> Result<i64, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT count() FROM user WHERE email = $email GROUP ALL")
+        .query("SELECT count() FROM user WHERE email = $email AND deleted_at IS NONE GROUP ALL")
         .bind(("email", email.to_string()))
         .await?;
 
@@ -284,7 +308,7 @@ pub async fn count_by_email_excluding_id(
 ) -> Result<i64, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT count() FROM user WHERE email = $email AND id != $exclude_id GROUP ALL")
+        .query("SELECT count() FROM user WHERE email = $email AND id != $exclude_id AND deleted_at IS NONE GROUP ALL")
         .bind(("email", email.to_string()))
         .bind(("exclude_id", exclude_id.clone()))
         .await?;
