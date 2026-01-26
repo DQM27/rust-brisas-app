@@ -2,7 +2,6 @@
 	import { fade } from 'svelte/transition';
 	import { X, Code2 } from 'lucide-svelte';
 	import { scale } from 'svelte/transition';
-	import { onDestroy } from 'svelte';
 	import { APP_CONFIG } from '$lib/config/app';
 	import { getVersion } from '@tauri-apps/api/app';
 
@@ -23,7 +22,7 @@
 		})
 		.catch((err) => console.error('Error fetching version:', err));
 
-	// Lista de colaboradores (hardcoded por ahora)
+	// Lista de colaboradores
 	const contributors = [
 		'Daniel Quintana',
 		'María González',
@@ -52,6 +51,7 @@
 		}
 	});
 
+	import { onDestroy } from 'svelte';
 	onDestroy(() => {
 		if (intervalId) clearInterval(intervalId);
 	});
@@ -105,6 +105,7 @@
 						<span class="px-2 py-1 rounded-md bg-surface-3 border border-surface">SURREALDB</span>
 					</div>
 
+					<!-- Versión -->
 					<div
 						class="flex items-center justify-between p-2.5 rounded-lg bg-surface-2 border border-surface shadow-inner"
 					>

@@ -24,7 +24,7 @@ import TrashSettingsPanel from '$lib/components/settings/TrashSettingsPanel.svel
 import RolesSettingsPanel from '$lib/components/settings/RolesSettingsPanel.svelte';
 import ShortcutsSettingsPanel from '$lib/components/settings/ShortcutsSettingsPanel.svelte';
 import ReportesListView from '$lib/components/settings/ReportesListView.svelte';
-import AboutPanel from '$lib/components/settings/AboutPanel.svelte';
+
 import SpotlightSettingsPanel from '$lib/components/settings/SpotlightSettingsPanel.svelte';
 
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
@@ -66,7 +66,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
 	'roles-settings': RolesSettingsPanel,
 	'shortcuts-settings': ShortcutsSettingsPanel,
 	'reportes-list': ReportesListView,
-	about: AboutPanel,
+	about: UnderConstruction,
 	'spotlight-settings': SpotlightSettingsPanel as any,
 
 	'gafete-list': GafeteListView,
