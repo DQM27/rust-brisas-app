@@ -52,9 +52,6 @@
 			const result = await service.getArchived();
 			if (result.ok) {
 				items = result.data;
-				if (gridWrapper) {
-					gridWrapper.replaceData(items);
-				}
 			} else {
 				error = result.error || 'Error desconocido';
 			}

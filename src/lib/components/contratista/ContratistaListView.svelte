@@ -100,7 +100,7 @@
 			const children =
 				c.vehiculos && c.vehiculos.length > 0
 					? c.vehiculos.map((v: any) => ({
-							_parent: c, // Reference to parent for actions
+							_parent: { ...c, vehiculos: undefined }, // Break circular reference!
 							id: v.id,
 							// Map vehicle fields to column matches
 							nombreCompleto: '', // Clear name column for cleaner look
@@ -121,14 +121,6 @@
 				_children: children
 			};
 		});
-
-		// Data update
-		if (gridWrapper && !loading) {
-			// Check if we are searching (smart search handles data replacement itself)
-			if (!searchTerm || searchTerm.length < 2) {
-				gridWrapper.replaceData(contratistasTreeData);
-			}
-		}
 	});
 
 	let loading = $state(false);

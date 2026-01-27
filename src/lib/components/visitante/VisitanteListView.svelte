@@ -126,7 +126,7 @@
 					_children:
 						v.vehiculos && v.vehiculos.length > 0
 							? v.vehiculos.map((vh: any) => ({
-									_parent: v,
+									_parent: { ...v, vehiculos: undefined }, // Break circular reference!
 									_isChild: true,
 									id: vh.id,
 									cedula: '',
@@ -141,9 +141,6 @@
 								}))
 							: undefined
 				}));
-				if (gridWrapper) {
-					gridWrapper.replaceData(visitantes);
-				}
 			} else {
 				error = res.error;
 				toast.error(res.error);

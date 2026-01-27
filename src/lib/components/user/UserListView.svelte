@@ -142,9 +142,6 @@
 				: await userService.fetchAllUsers();
 			if (result.ok) {
 				users = result.data;
-				if (gridWrapper) {
-					gridWrapper.replaceData(users);
-				}
 			} else {
 				error = result.error;
 			}

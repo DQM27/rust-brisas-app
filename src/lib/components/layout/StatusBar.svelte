@@ -2,8 +2,6 @@
 <script lang="ts">
 	import { Wifi, WifiOff } from 'lucide-svelte';
 	import { online } from '$lib/stores/network';
-	import { statusBarInfo } from '$lib/stores/ui';
-	import { Database } from 'lucide-svelte';
 
 	// Clases reactivas para el estado de conexión
 	const connectionClasses = $derived($online ? 'text-success' : 'text-error');
@@ -31,34 +29,5 @@
 				{$online ? 'En línea' : 'Sin conexión'}
 			</span>
 		</div>
-
-		<!-- Separador sutil -->
-		<div class="h-3 w-px bg-white/10"></div>
-
-		<!-- Badge de Registros (Sutil) -->
-		{#if $statusBarInfo.count !== undefined}
-			<div class="flex items-center gap-1.5 px-2 text-blue-400/80">
-				<Database size={12} />
-				<span class="font-bold text-[11px] uppercase tracking-wider"
-					>{$statusBarInfo.count} {$statusBarInfo.label || 'Registros'}</span
-				>
-			</div>
-		{/if}
-
-		<!-- Badge de Selección (Solo si hay algo seleccionado) -->
-		{#if $statusBarInfo.selectedCount && $statusBarInfo.selectedCount > 0}
-			<div
-				class="flex items-center gap-1.5 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20 text-yellow-500 animate-in fade-in zoom-in duration-300"
-			>
-				<span class="font-black text-[10px] uppercase tracking-tighter"
-					>{$statusBarInfo.selectedCount} Seleccionados</span
-				>
-			</div>
-		{/if}
-	</div>
-
-	<!-- Sección derecha - Espacio reservado para futuras funcionalidades -->
-	<div class="flex items-center gap-4 text-gray-500 italic text-[10px]">
-		{$statusBarInfo.message || 'Sistema Brisas - Listo'}
 	</div>
 </div>

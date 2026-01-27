@@ -21,8 +21,21 @@ export interface TabulatorWrapperAPI {
 export function createTabulatorController(): TabulatorWrapperAPI {
 	let tableInstance: Tabulator | undefined;
 
-	// Deep clone helper to strip Svelte proxies
-	const safeClone = (data: any) => JSON.parse(JSON.stringify(data));
+	// Robust clone helper to strip Svelte proxies and handle data safely
+	const safeClone = (data: any) => {
+		try {
+			// structuredClone is the modern, fast way to deep clone (available in Tauri/Webview)
+			return structuredClone(data);
+		} catch (e) {
+			// Fallback if structuredClone fails (e.g. circular references or functions)
+			try {
+				return JSON.parse(JSON.stringify(data));
+			} catch (err) {
+				console.error('Tabulator Controller: Failed to clone data safely', err);
+				return data; // Emergency fallback: return original (might have proxies but better than crashing)
+			}
+		}
+	};
 
 	const getTable = () => tableInstance;
 	const setTable = (instance: Tabulator) => {
