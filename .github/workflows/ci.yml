@@ -6,9 +6,8 @@ on:
     tags: ['v*']
   pull_request:
     branches: [main, develop]
-  workflow_dispatch: # Permite ejecutar manualmente desde la web de GitHub
+  workflow_dispatch:
 
-# Cancela ejecuciones anteriores si se empuja un nuevo commit en la misma rama (ahorra minutos)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -45,11 +44,9 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      # Frontend
       - name: Frontend Lint & Check
         run: npm run check
 
-      # Rust Quality
       - name: Rust Format Check
         run: cd src-tauri && cargo fmt --check
 
@@ -90,14 +87,22 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build Tauri App
-        run: npm run tauri build
+      - name: Build Tauri App (Without Signing)
+        run: npm run tauri build -- --target x86_64-pc-windows-msvc
 
-      - name: Upload Artifacts
+      - name: Upload MSI Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Mega-Brisas-Windows
-          path: src-tauri/target/release/bundle/msi/*.msi
+          name: Mega-Brisas-Windows-MSI
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          if-no-files-found: error
+
+      - name: Upload NSIS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mega-Brisas-Windows-NSIS
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          if-no-files-found: error
 
   # ==========================================================================
   # RELEASE - Only when pushing a tag like v1.0.0
@@ -108,7 +113,8 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     timeout-minutes: 45
-    permissions: write-all
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -129,23 +135,25 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Check Secret Availability
+      - name: Validate Signing Secrets
         shell: bash
-        env:
-          KEY_EXISTS: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
         run: |
-          if [ "$KEY_EXISTS" = "true" ]; then
-            echo "✅ Secret TAURI_SIGNING_PRIVATE_KEY is present."
-          else
-            echo "❌ Secret TAURI_SIGNING_PRIVATE_KEY is MISSING or EMPTY."
+          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
+            echo "❌ Error: TAURI_SIGNING_PRIVATE_KEY is missing"
+            exit 1
           fi
+          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
+            echo "❌ Error: TAURI_SIGNING_PRIVATE_KEY_PASSWORD is missing"
+            exit 1
+          fi
+          echo "✅ All signing secrets are present"
 
       - name: Build and Release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets['TAURI_SIGNING_PRIVATE_KEY'] }}
-          TAURI_SIGNING_PASSWORD: ${{ secrets.TAURI_SIGNING_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Mega Brisas ${{ github.ref_name }}'
