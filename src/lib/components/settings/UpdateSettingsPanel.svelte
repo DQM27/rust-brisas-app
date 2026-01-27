@@ -2,8 +2,20 @@
 	import { DownloadCloud, RefreshCw, CheckCircle2 } from 'lucide-svelte';
 	import { scale } from 'svelte/transition';
 	import { checkAndInstallUpdate } from '$lib/services/updateService';
+	import { getVersion } from '@tauri-apps/api/app';
+	import { onMount } from 'svelte';
 
 	let isChecking = $state(false);
+	let currentVersion = $state('...');
+
+	onMount(async () => {
+		try {
+			currentVersion = await getVersion();
+		} catch (e) {
+			console.error('Error getting version:', e);
+			currentVersion = 'Error';
+		}
+	});
 
 	async function handleCheckUpdate() {
 		isChecking = true;
@@ -53,7 +65,7 @@
 						<span
 							class="bg-gray-100 dark:bg-[#21262d] text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full text-xs font-mono border border-gray-200 dark:border-gray-600"
 						>
-							v1.2.0
+							v{currentVersion}
 						</span>
 					</div>
 

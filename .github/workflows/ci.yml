@@ -39,7 +39,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: 'src-tauri -> target'
+          workspaces: 'src-tauri'
 
       - name: Install Dependencies
         run: npm ci
@@ -82,7 +82,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: 'src-tauri -> target'
+          workspaces: 'src-tauri'
 
       - name: Install Dependencies
         run: npm ci
@@ -130,7 +130,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: 'src-tauri -> target'
+          workspaces: 'src-tauri'
 
       - name: Install Dependencies
         run: npm ci
@@ -158,7 +158,7 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Mega Brisas ${{ github.ref_name }}'
           releaseBody: 'Descarga el instalador para Windows (.msi o .exe)'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
           updaterJsonPreferNsis: true
