@@ -120,6 +120,17 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Check Secret Availability
+        shell: bash
+        env:
+          KEY_EXISTS: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+        run: |
+          if [ "$KEY_EXISTS" = "true" ]; then
+            echo "✅ Secret TAURI_SIGNING_PRIVATE_KEY is present."
+          else
+            echo "❌ Secret TAURI_SIGNING_PRIVATE_KEY is MISSING or EMPTY."
+          fi
+
       - name: Build and Release
         uses: tauri-apps/tauri-action@v0
         env:
