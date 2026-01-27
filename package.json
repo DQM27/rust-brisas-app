@@ -14,7 +14,8 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write . && eslint . --fix",
 		"version:sync": "node scripts/sync-versions.js",
-		"version": "npm run version:sync && git add src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock"
+		"version": "npm run version:sync && git add src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock",
+		"postversion": "git push origin develop --follow-tags"
 	},
 	"license": "MIT",
 	"dependencies": {
