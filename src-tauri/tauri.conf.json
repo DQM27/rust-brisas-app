@@ -30,6 +30,7 @@
       "msi",
       "nsis"
     ],
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -60,7 +61,7 @@
         "https://github.com/DQM27/rust-brisas-app/releases/latest/download/latest.json"
       ],
       "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYyQTEzNUIxRENGMDdFMzMKUldRemZ2RGNzVFdoWWczaGE2Wmg2aElLWVN1ci9NK09tK1pPSllBNUhhNFdtYXhIVEsrbksvQXMK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM2OUI3QTU2MTBEOUYxQjMKUldTejhka1FWbnFieGlYMWZKU3JrcEo1UG9iL0trdzNPSzlyTm93MXNhb0E5MXByYis1eldpbmkK"
     }
   }
 }

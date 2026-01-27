@@ -20,3 +20,4 @@ vite.config.ts.timestamp-*
 
 # Tauri updater keys - NEVER commit private keys!
 .tauri/keys/
+private.key
