@@ -54,6 +54,13 @@
 			onkeydown={(e) => e.key === 'Escape' && onClose()}
 		>
 			<!-- Grupo 1: Configuración Principal -->
+			<button
+				class="settings-menu-item text-blue-400 hover:text-blue-300 font-medium"
+				onclick={() => handleAction(() => openView('welcome', 'Bienvenida'))}
+			>
+				Pantalla de Bienvenida
+			</button>
+
 			{#if currentUser && can(currentUser, 'VIEW_SETTINGS_GENERAL')}
 				<button
 					class="settings-menu-item"

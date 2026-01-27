@@ -29,7 +29,8 @@ import {
 	Sun,
 	LogOut,
 	Keyboard,
-	AlertTriangle
+	AlertTriangle,
+	Home
 } from 'lucide-svelte';
 import type { SpotlightItemDefinition } from '$lib/types/spotlight';
 
@@ -141,6 +142,16 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		keywords: ['alerta', 'incidencia', 'resolucion', 'gafete', 'seguridad', 'pendiente'],
 		permission: 'VIEW_GAFETE_LIST',
 		shortcut: 'Alt+A'
+	},
+	{
+		id: 'welcome',
+		label: 'Bienvenida',
+		description: 'Pantalla de inicio y resumen visual',
+		icon: Home,
+		category: 'module',
+		subCategory: 'link',
+		keywords: ['inicio', 'bienvenida', 'home', 'pantalla', 'principal'],
+		shortcut: 'Shift+H'
 	}
 ];
 
@@ -411,7 +422,8 @@ export const MODULE_COMPONENT_MAP: Record<string, { componentKey: string; title:
 	'settings-export': { componentKey: 'export-settings', title: 'Configuración de Exportación' },
 	'settings-backup': { componentKey: 'backup-settings', title: 'Copias de Seguridad' },
 	'settings-spotlight': { componentKey: 'spotlight-settings', title: 'Ajustes de Spotlight' },
-	'trash-settings': { componentKey: 'trash-settings', title: 'Papelera de Reciclaje' }
+	'trash-settings': { componentKey: 'trash-settings', title: 'Papelera de Reciclaje' },
+	welcome: { componentKey: 'welcome', title: 'Bienvenida' }
 };
 
 // ============================================

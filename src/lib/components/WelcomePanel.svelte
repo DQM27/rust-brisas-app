@@ -162,16 +162,9 @@
 	let isDay = $derived(timeOfDay === 'day' || timeOfDay === 'morning');
 
 	// Use dark text only if it's daytime AND NOT winter (winter mountains are dark) AND background is shown
-	let useDarkText = $derived(
-		$generalSettings.showBackground && isDay && $currentSeason !== 'winter'
-	);
-
+	// Simplified text styling - Always white as requested
 	let textColorClass = $derived(
-		isBirthday
-			? 'text-white drop-shadow-xl tracking-wide'
-			: useDarkText
-				? 'text-slate-800 drop-shadow-sm'
-				: 'text-white drop-shadow-md'
+		isBirthday ? 'text-white drop-shadow-xl tracking-wide' : 'text-white drop-shadow-md opacity-90'
 	);
 
 	// Dynamic greeting based on time
@@ -243,9 +236,7 @@
 					<h2
 						class="tracking-wide transition-colors duration-1000 {$generalSettings.showWelcomeCards
 							? 'text-xl md:text-2xl mb-0'
-							: 'text-3xl md:text-4xl mb-1'} font-medium {useDarkText
-							? 'text-slate-700/80'
-							: 'text-white/90 drop-shadow-md'}"
+							: 'text-3xl md:text-4xl mb-1'} font-medium text-white/90 drop-shadow-md"
 					>
 						{greeting}
 					</h2>
@@ -254,10 +245,8 @@
 					<h1
 						class="tracking-tight transition-all duration-1000 font-bold
             {$generalSettings.showWelcomeCards ? 'text-4xl md:text-5xl' : 'text-6xl md:text-7xl'}
-            {useDarkText
-							? 'text-transparent bg-clip-text bg-gradient-to-br from-slate-800 via-slate-600 to-slate-800 drop-shadow-sm'
-							: 'text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-blue-50 drop-shadow-lg'}"
-						style={useDarkText ? '' : 'filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));'}
+            text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-blue-50 drop-shadow-lg"
+						style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));"
 					>
 						{$currentUser?.nombre || 'Usuario'}
 					</h1>
