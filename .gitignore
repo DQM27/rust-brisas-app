@@ -17,6 +17,8 @@ vite.config.ts.timestamp-*
 /Nueva carpeta/
 /dist/
 /src/.angular/
+/deploy/
+
 
 # Tauri updater keys - NEVER commit private keys!
 .tauri/keys/
