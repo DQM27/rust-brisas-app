@@ -36,19 +36,28 @@
 
 	let { tabId, data }: Props = $props();
 
-	// Effect to handle external actions (like from Spotlight)
+	// Effect to handle external actions (like from Spotlight or Layout)
 	$effect(() => {
-		const trigger = data?.openCreateModal;
-		if (trigger) {
-			console.log('UserListView: Trigger received', trigger);
-			// Usamos un timeout pequeño para asegurar que el componente esté listo
+		if (data?.openCreateModal) {
 			setTimeout(() => {
+				if (!showModal) openModal(null);
+			}, 200);
+		}
+
+		if (data?.editUserId) {
+			setTimeout(async () => {
 				if (!showModal) {
-					console.log('UserListView: Opening modal');
-					openModal(null);
+					// Si tenemos el ID, necesitamos encontrar el usuario en la lista actual o buscarlo
+					const targetUser = users.find((u) => u.id === data.editUserId);
+					if (targetUser) {
+						openModal(targetUser);
+					} else {
+						// Fallback: tratar de cargarlo individualmente si no está en la lista (raro pero posible)
+						const res = await userService.fetchUserById(data.editUserId);
+						if (res.ok) openModal(res.data);
+					}
 				}
 			}, 200);
-			// No reseteamos data aqui porque ahora es un timestamp que cambia
 		}
 
 		if (data?.search) {

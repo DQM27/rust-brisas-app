@@ -3,7 +3,7 @@
  */
 
 export type SpotlightCategory = 'module' | 'action' | 'tab' | 'data' | 'recent';
-export type SpotlightSubCategory = 'master' | 'transaction' | 'settings' | 'link';
+export type SpotlightSubCategory = 'master' | 'transaction' | 'settings' | 'link' | 'contractor' | 'provider' | 'visitor' | 'user_detail';
 
 export interface SpotlightItem {
 	id: string;

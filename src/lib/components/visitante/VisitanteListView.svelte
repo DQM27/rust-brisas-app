@@ -11,6 +11,7 @@
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import VisitanteFormModal from '$lib/components/visitante/VisitanteFormModal.svelte';
 	import { openConfirm } from '$lib/stores/confirm.svelte';
+	import PersonDetailModal from '$lib/components/shared/PersonDetailModal.svelte';
 
 	// Logic & Services
 	import {
@@ -21,6 +22,7 @@
 		restoreVisitante,
 		getArchivedVisitantes
 	} from '$lib/logic/visitante/visitanteService';
+	import { validarIngreso } from '$lib/logic/ingreso/ingresoService';
 	import { getVisitanteColumns } from '$lib/logic/visitante/visitanteColumns';
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 
@@ -61,6 +63,49 @@
 				handleSearch(data.search);
 			}, 300);
 		}
+
+		if (data?.openDetailId) {
+			setTimeout(async () => {
+				const id = data.openDetailId;
+				try {
+					const res = await validarIngreso('visita', id);
+
+					if (res.ingresoAbierto) {
+						selectedPersonForDetail = res.ingresoAbierto;
+					} else {
+						const visitante = res.persona || visitantes.find((v) => v.id === id);
+						if (visitante) {
+							const v = visitante as any;
+							const empresaNombre = v.empresa || v.empresaNombre || 'Particular';
+
+							selectedPersonForDetail = {
+								...visitante,
+								id: '',
+								tipoIngreso: 'visita',
+								tipoAutorizacionDisplay: '-',
+								modoIngresoDisplay: '-',
+								fechaHoraIngreso: '',
+								usuarioIngresoNombre: '-',
+								estaAdentro: false,
+								empresa: empresaNombre,
+								empresaNombre: empresaNombre
+							} as any;
+						} else {
+							toast.error('Visitante no encontrado');
+							return;
+						}
+					}
+
+					showDetailModal = true;
+					if (gridWrapper) {
+						gridWrapper.getTable().setFilter('id', '=', id);
+					}
+				} catch (e) {
+					console.error(e);
+					toast.error('Error al cargar detalles');
+				}
+			}, 500);
+		}
 	});
 
 	// State
@@ -75,6 +120,10 @@
 	let showModal = $state(false);
 	let selectedVisitante = $state<VisitanteResponse | null>(null);
 	let modalLoading = $state(false);
+
+	// Detail Modal State
+	let showDetailModal = $state(false);
+	let selectedPersonForDetail = $state<any>(null);
 
 	// Grid State
 	let gridWrapper = $state<any>(null);
@@ -433,6 +482,15 @@
 	loading={modalLoading}
 	onSave={handleSave}
 	onClose={() => (showModal = false)}
+/>
+
+<PersonDetailModal
+	bind:show={showDetailModal}
+	person={selectedPersonForDetail}
+	onClose={() => {
+		showDetailModal = false;
+		selectedPersonForDetail = null;
+	}}
 />
 
 <style>

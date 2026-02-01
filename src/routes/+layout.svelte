@@ -16,6 +16,7 @@
 	import ShortcutHelpModal from '$lib/components/modals/ShortcutHelpModal.svelte';
 	import PersonaQuickCardModal from '$lib/components/shared/PersonaQuickCardModal.svelte';
 	import QuickUserSwitchModal from '$lib/components/modals/QuickUserSwitchModal.svelte';
+	import ProfileModal from '$lib/components/user/ProfileModal.svelte';
 	import GlobalConfirmModal from '$lib/components/shared/GlobalConfirmModal.svelte';
 	import { needsSetup, setWindowDecorations, setWindowSize } from '$lib/services/keyringService';
 	import {
@@ -32,6 +33,8 @@
 	} from '$lib/stores/sessionStore';
 	import ScreensaverPasswordModal from '$lib/components/ScreensaverPasswordModal.svelte';
 	import { modulesStore } from '$lib/stores/modules'; // Import modulesStore
+	import { showUserProfileModal, selectedUserProfile } from '$lib/stores/ui';
+	import { openTab } from '$lib/stores/tabs';
 
 	// Estado de autenticación reactivo
 	let authenticated = $derived($isAuthenticated);
@@ -283,6 +286,28 @@
 			<PersonaQuickCardModal />
 			<QuickUserSwitchModal />
 			<GlobalConfirmModal />
+
+			<ProfileModal
+				show={$showUserProfileModal}
+				user={$selectedUserProfile}
+				onClose={() => showUserProfileModal.set(false)}
+				onEdit={() => {
+					// Redirigir a la lista de usuarios y abrir edición
+					const user = $selectedUserProfile;
+					showUserProfileModal.set(false);
+					if (user) {
+						openTab({
+							componentKey: 'user-list',
+							title: 'Lista Usuarios',
+							id: 'users-list',
+							focusOnOpen: true,
+							data: {
+								editUserId: user.id
+							}
+						});
+					}
+				}}
+			/>
 		{/if}
 
 		<!-- Screensaver Password Modal -->

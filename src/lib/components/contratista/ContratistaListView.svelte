@@ -48,10 +48,12 @@
 	import ContratistaFormModal from '$lib/components/contratista/modal/ContratistaFormModal.svelte';
 	import VehiculoManagerModal from '$lib/components/vehiculo/VehiculoManagerModal.svelte';
 	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
+	import PersonDetailModal from '$lib/components/shared/PersonDetailModal.svelte';
 
 	// Logic
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 	import { getAvailableFormats } from '$lib/logic/export/exportService';
+	import { validarIngreso } from '$lib/logic/ingreso/ingresoService';
 
 	// Types
 	import type {
@@ -79,6 +81,59 @@
 			setTimeout(() => {
 				handleGridSearch(data.search);
 			}, 200);
+		}
+
+		if (data?.openDetailId) {
+			// Si viene un ID para detalle, buscamos info extendida y abrimos modal de detalle
+			setTimeout(async () => {
+				const id = data.openDetailId;
+				try {
+					// 1. Intentar validar ingreso para ver si está dentro
+					const res = await validarIngreso('contratista', id);
+					if (res.ingresoAbierto) {
+						// Está adentro -> mostrar datos reales del ingreso
+						selectedPersonForDetail = res.ingresoAbierto;
+					} else {
+						// No está adentro -> Construir objeto parcial con datos del contratista
+						// Buscamos en la lista local o usamos los datos del res.persona (que viene del backend)
+						const contratista = res.persona || contratistas.find((c) => c.id === id);
+
+						if (contratista) {
+							// Normalizar campos debido a diferencias entre ValidacionIngresoResult.persona y ContratistaResponse
+							const c = contratista as any;
+							const empresaNombre = c.empresa || c.empresaNombre || 'N/A';
+							const isPraindVigente =
+								c.praindVigente ?? (c.praindVencido !== undefined ? !c.praindVencido : false);
+
+							selectedPersonForDetail = {
+								...contratista,
+								id: '',
+								tipoIngreso: 'contratista',
+								tipoAutorizacionDisplay: isPraindVigente ? 'PRAIND Vigente' : 'Sin Autorización',
+								modoIngresoDisplay: '-',
+								fechaHoraIngreso: '',
+								usuarioIngresoNombre: '-',
+								estaAdentro: false,
+								empresa: empresaNombre,
+								empresaNombre: empresaNombre
+							} as any;
+						} else {
+							toast.error('No se pudo cargar la información del contratista');
+							return;
+						}
+					}
+
+					showDetailModal = true;
+
+					// Filtrar grid de fondo
+					if (gridWrapper) {
+						gridWrapper.getTable().setFilter('id', '=', id);
+					}
+				} catch (e) {
+					console.error('Error opening detail', e);
+					toast.error('Error al cargar detalles');
+				}
+			}, 500);
 		}
 	});
 
@@ -138,6 +193,10 @@
 	// Vehiculo Modal State
 	let showVehiculoModal = $state(false);
 	let selectedContratistaForVehicles = $state<ContratistaResponse | null>(null);
+
+	// Detail Modal State
+	let showDetailModal = $state(false);
+	let selectedPersonForDetail = $state<any>(null);
 
 	// Filters
 	let estadoFilter = $state<'todos' | 'activo' | 'inactivo' | 'suspendido'>('todos');
@@ -656,6 +715,16 @@
 </script>
 
 <svelte:window onclick={handleClickOutside} />
+
+<PersonDetailModal
+	bind:show={showDetailModal}
+	person={selectedPersonForDetail}
+	onClose={() => {
+		showDetailModal = false;
+		selectedPersonForDetail = null;
+		// Opcional: limpiar filtro al cerrar? Mejor dejarlo para contexto
+	}}
+/>
 
 <div class="flex h-full flex-col relative bg-surface-1">
 	<!-- Header -->

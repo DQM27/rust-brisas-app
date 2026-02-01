@@ -189,11 +189,19 @@
                                         {i === highlightedIndex
 										? item.subCategory === 'master'
 											? 'bg-emerald-600 text-white shadow-lg'
-											: item.subCategory === 'transaction'
-												? 'bg-amber-600 text-white shadow-lg'
-												: item.subCategory === 'settings'
-													? 'bg-indigo-600 text-white shadow-lg'
-													: 'bg-blue-600 text-white shadow-lg'
+											: item.subCategory === 'contractor'
+												? 'bg-cyan-600 text-white shadow-lg'
+												: item.subCategory === 'provider'
+													? 'bg-purple-600 text-white shadow-lg'
+													: item.subCategory === 'visitor'
+														? 'bg-amber-600 text-white shadow-lg'
+														: item.subCategory === 'transaction'
+															? 'bg-amber-600 text-white shadow-lg'
+															: item.subCategory === 'settings'
+																? 'bg-indigo-600 text-white shadow-lg'
+																: item.subCategory === 'user_detail'
+																	? 'bg-blue-600 text-white shadow-lg'
+																	: 'bg-blue-600 text-white shadow-lg'
 										: 'hover:bg-white/5 text-gray-400'}"
 								>
 									<div class="flex-shrink-0">
@@ -203,13 +211,21 @@
 												? 'text-white'
 												: item.subCategory === 'master'
 													? 'text-emerald-500'
-													: item.subCategory === 'transaction'
-														? 'text-amber-500'
-														: item.subCategory === 'settings'
-															? 'text-indigo-400'
-															: item.category === 'tab'
-																? 'text-blue-400'
-																: 'text-gray-500'}
+													: item.subCategory === 'contractor'
+														? 'text-cyan-400'
+														: item.subCategory === 'provider'
+															? 'text-purple-400'
+															: item.subCategory === 'visitor'
+																? 'text-amber-400'
+																: item.subCategory === 'transaction'
+																	? 'text-amber-500'
+																	: item.subCategory === 'settings'
+																		? 'text-indigo-400'
+																		: item.subCategory === 'user_detail'
+																			? 'text-blue-400'
+																			: item.category === 'tab'
+																				? 'text-blue-400'
+																				: 'text-gray-500'}
 										/>
 									</div>
 									<div class="flex-1 min-w-0">
@@ -224,6 +240,33 @@
 															: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}"
 													>
 														CREAR
+													</span>
+												{:else if item.subCategory === 'contractor'}
+													<span
+														class="text-[8.5px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
+                                                        {i === highlightedIndex
+															? 'bg-white/20 text-white border-white/30'
+															: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'}"
+													>
+														INFO
+													</span>
+												{:else if item.subCategory === 'provider'}
+													<span
+														class="text-[8.5px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
+                                                        {i === highlightedIndex
+															? 'bg-white/20 text-white border-white/30'
+															: 'bg-purple-500/10 text-purple-400 border-purple-500/20'}"
+													>
+														INFO
+													</span>
+												{:else if item.subCategory === 'visitor'}
+													<span
+														class="text-[8.5px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
+                                                        {i === highlightedIndex
+															? 'bg-white/20 text-white border-white/30'
+															: 'bg-amber-500/10 text-amber-400 border-amber-500/20'}"
+													>
+														INFO
 													</span>
 												{:else if item.subCategory === 'transaction'}
 													<span
@@ -242,6 +285,15 @@
 															: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}"
 													>
 														AJUSTE
+													</span>
+												{:else if item.subCategory === 'user_detail'}
+													<span
+														class="text-[8.5px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
+                                                        {i === highlightedIndex
+															? 'bg-white/20 text-white border-white/30'
+															: 'bg-blue-500/10 text-blue-400 border-blue-500/20'}"
+													>
+														INFO
 													</span>
 												{/if}
 

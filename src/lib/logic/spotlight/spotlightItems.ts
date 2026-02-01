@@ -411,16 +411,20 @@ export async function searchDeep(
 			// Lógica de iconos y labels según tipo
 			if (res.tipo === 'contratista') {
 				icon = IdCard;
-				subCategory = 'master';
+				subCategory = 'contractor';
 				if (res.empresaNombre) {
 					description += ` • ${res.empresaNombre}`;
 				}
 			} else if (res.tipo === 'proveedor') {
 				icon = Building2;
-				subCategory = 'master';
-			} else if (res.tipo === 'user') {
+				subCategory = 'provider';
+			} else if (res.tipo === 'visitante' || res.tipo === 'visita') {
+				// Asumimos 'visitante' como default para ambos si no hay icono específico
+				icon = User;
+				subCategory = 'visitor';
+			} else if (res.tipo === 'user' || res.tipo === 'usuario') {
 				icon = ShieldCheck;
-				subCategory = 'settings';
+				subCategory = 'user_detail';
 			}
 
 			if (res.cedula) {
@@ -435,13 +439,43 @@ export async function searchDeep(
 				category: 'data',
 				subCategory,
 				action: () => {
-					// Acción: Disparar cambio rápido de usuario
-					quickSwitchTarget.set({
-						id: res.id,
-						email: res.email, // Importante para el login
-						nombreCompleto: res.nombreCompleto || res.id,
-						tipo: res.tipo
-					});
+					// Acción: Depende del tipo
+					if (res.tipo === 'user' || res.tipo === 'usuario') {
+						import('$lib/stores/ui').then(({ showUserProfileModal, selectedUserProfile }) => {
+							// Importar servicio dinámicamente para evitar dependencias circulares si las hubiera
+							import('$lib/logic/user/userService').then(async (service) => {
+								const response = await service.fetchUserById(res.id);
+								if (response.ok) {
+									selectedUserProfile.set(response.data);
+									showUserProfileModal.set(true);
+								}
+							});
+						});
+					} else if (res.tipo === 'contratista') {
+						openTab({
+							componentKey: 'contratista-list',
+							title: 'Lista Contratistas',
+							id: 'contratista-list',
+							focusOnOpen: true,
+							data: { openDetailId: res.id }
+						});
+					} else if (res.tipo === 'proveedor') {
+						openTab({
+							componentKey: 'proveedor-list',
+							title: 'Lista Proveedores',
+							id: 'proveedor-list',
+							focusOnOpen: true,
+							data: { openDetailId: res.id }
+						});
+					} else if (res.tipo === 'visitante' || res.tipo === 'visita') {
+						openTab({
+							componentKey: 'visitante-list',
+							title: 'Lista Visitantes',
+							id: 'visitante-list',
+							focusOnOpen: true,
+							data: { openDetailId: res.id }
+						});
+					}
 					onClose();
 				}
 			};

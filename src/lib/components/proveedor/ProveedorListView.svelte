@@ -9,6 +9,7 @@
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import ProveedorFormModal from '$lib/components/proveedor/ProveedorFormModal.svelte';
 	import { openConfirm } from '$lib/stores/confirm.svelte';
+	import PersonDetailModal from '$lib/components/shared/PersonDetailModal.svelte';
 
 	// Logic & Services
 	import {
@@ -20,6 +21,7 @@
 		restoreProveedor,
 		changeStatus
 	} from '$lib/logic/proveedor/proveedorService';
+	import { validarIngreso } from '$lib/logic/ingreso/ingresoService';
 	import { getProveedorColumns } from '$lib/logic/proveedor/proveedorColumns';
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 
@@ -61,6 +63,49 @@
 				handleSearch(data.search);
 			}, 300);
 		}
+
+		if (data?.openDetailId) {
+			setTimeout(async () => {
+				const id = data.openDetailId;
+				try {
+					const res = await validarIngreso('proveedor', id);
+
+					if (res.ingresoAbierto) {
+						selectedPersonForDetail = res.ingresoAbierto;
+					} else {
+						const proveedor = res.persona || proveedores.find((p) => p.id === id);
+						if (proveedor) {
+							const p = proveedor as any;
+							const empresaNombre = p.empresa || p.empresaNombre || 'N/A';
+
+							selectedPersonForDetail = {
+								...proveedor,
+								id: '',
+								tipoIngreso: 'proveedor',
+								tipoAutorizacionDisplay: '-',
+								modoIngresoDisplay: '-',
+								fechaHoraIngreso: '',
+								usuarioIngresoNombre: '-',
+								estaAdentro: false,
+								empresa: empresaNombre,
+								empresaNombre: empresaNombre
+							} as any;
+						} else {
+							toast.error('Proveedor no encontrado');
+							return;
+						}
+					}
+
+					showDetailModal = true;
+					if (gridWrapper) {
+						gridWrapper.getTable().setFilter('id', '=', id);
+					}
+				} catch (e) {
+					console.error(e);
+					toast.error('Error al cargar detalles');
+				}
+			}, 500);
+		}
 	});
 
 	// State
@@ -77,6 +122,10 @@
 	let isReadOnlyModal = $state(false);
 	let modalLoading = $state(false);
 	let isUpdatingStatus = false;
+
+	// Detail Modal State
+	let showDetailModal = $state(false);
+	let selectedPersonForDetail = $state<any>(null);
 
 	// Grid State
 	let gridWrapper = $state<any>(null);
@@ -439,6 +488,15 @@
 	loading={modalLoading}
 	onSave={handleSave}
 	onClose={() => (showModal = false)}
+/>
+
+<PersonDetailModal
+	bind:show={showDetailModal}
+	person={selectedPersonForDetail}
+	onClose={() => {
+		showDetailModal = false;
+		selectedPersonForDetail = null;
+	}}
 />
 
 <style>

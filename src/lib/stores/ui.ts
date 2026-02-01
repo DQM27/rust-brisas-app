@@ -44,3 +44,7 @@ export const showQuickSwitch = writable(false);
 
 // Store para establecer un usuario objetivo para el cambio rápido desde afuera (ej. Spotlight)
 export const quickSwitchTarget = writable<any | null>(null);
+
+// PROFILES
+export const showUserProfileModal = writable(false);
+export const selectedUserProfile = writable<any | null>(null);
