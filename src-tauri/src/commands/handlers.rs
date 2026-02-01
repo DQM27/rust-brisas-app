@@ -252,6 +252,10 @@ macro_rules! register_handlers {
             // ==========================================
             commands::audit_commands::log_system_event,
             commands::audit_commands::fetch_system_logs,
+            // ==========================================
+            // COMANDOS DE RED
+            // ==========================================
+            commands::network_commands::get_local_ip,
         ]
     };
 }

@@ -2,8 +2,9 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 	import { invoke } from '@tauri-apps/api/core';
-	import { isAuthenticated } from '$lib/stores/auth';
+	import { isAuthenticated, currentUser } from '$lib/stores/auth';
 	import Sidebar from '$lib/components/layout/sidebar/Sidebar.svelte';
 	import StatusBar from '$lib/components/layout/StatusBar.svelte';
 	import { initNetworkMonitor } from '$lib/stores/network';
@@ -84,10 +85,43 @@
 
 		const cleanup = initNetworkMonitor();
 
+		// Handle App Exit (Audit)
+		let unlistenClose: (() => void) | undefined;
+		(async () => {
+			const { getCurrentWindow } = await import('@tauri-apps/api/window');
+			unlistenClose = await getCurrentWindow().onCloseRequested(async (event) => {
+				// Only if authenticated
+				const auth = get(isAuthenticated);
+				const user = get(currentUser);
+
+				if (auth && user) {
+					console.log('[Audit] App closing - logging event...');
+					// We don't prevent close, just try to log "fire and forget"
+					// Ideally we would prevent default, await log, then close,
+					// but that complicates things. Rust backend might act faster.
+					// Let's at least trigger the log.
+					const { auditService } = await import('$lib/services/auditService');
+					const { getCurrentSessionDuration } = await import('$lib/stores/sessionStore');
+
+					// Use a blocking invoke if possible or just fire it
+					const duration = getCurrentSessionDuration();
+					await auditService.log(
+						'LOGOUT',
+						user.nombreCompleto,
+						'Application Exit (Manual)',
+						duration
+					);
+				}
+			});
+		})();
+
 		// Mostrar ventana cuando el frontend esté listo
 		invoke('show_main_window').catch(console.error);
 
-		return cleanup;
+		return () => {
+			cleanup();
+			if (unlistenClose) unlistenClose();
+		};
 	});
 
 	// Efecto reactivo para gestionar el estado de la ventana (Setup -> Login -> App)

@@ -352,7 +352,18 @@ function formatDuration(ms: number): string {
 
 	if (h > 0) return `${h}h ${m}m`;
 	if (m > 0) return `${m}m ${s}s`;
+	if (h > 0) return `${h}h ${m}m`;
+	if (m > 0) return `${m}m ${s}s`;
 	return `${s}s`;
+}
+
+/**
+ * Helper to get the current session duration string
+ */
+export function getCurrentSessionDuration(): string {
+	const state = get(sessionState);
+	const durationMs = Date.now() - state.sessionStartTime;
+	return formatDuration(durationMs);
 }
 
 /**

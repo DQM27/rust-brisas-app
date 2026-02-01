@@ -23,13 +23,20 @@ export const auditService = {
         duration?: string
     ): Promise<void> => {
         try {
+            // Obtener IP local
+            let ipAddress = 'Unknown';
+            try {
+                ipAddress = await invoke('get_local_ip');
+            } catch (e) {
+                console.warn('[Audit] Failed to get local IP:', e);
+            }
+
             // Nota: El backend se encarga de terminal_id y terminal_name desde AppConfig.
-            // IP address se pasa como null por ahora (requeriría comando extra)
             await invoke('log_system_event', {
                 userName: user_name || 'Desconocido',
                 eventType: event_type,
                 duration,
-                ipAddress: null, // TODO: Implementar obtención de IP
+                ipAddress,
                 details
             });
             console.log('[Audit] Event logged:', event_type);

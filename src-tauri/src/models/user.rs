@@ -406,6 +406,12 @@ pub struct SessionUser {
     pub role_name: String,
 }
 
+impl SessionUser {
+    pub fn full_name(&self) -> String {
+        format!("{} {}", self.nombre, self.apellido)
+    }
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserListResponse {

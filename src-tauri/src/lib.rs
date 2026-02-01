@@ -183,6 +183,8 @@ pub fn run() {
                                 }
                             }
                             "quit" => {
+                                let session_state = app.state::<SessionState>();
+                                log_exit_event(app.app_handle(), &session_state, "Application Exit (Tray)");
                                 app.exit(0);
                             }
                             _ => {}
@@ -209,6 +211,19 @@ pub fn run() {
 
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
+                 // Log exit event locally before hiding/preventing close (or usually here we just hide)
+                 // But user wants to capture "Close from X" as logout.
+                 // NOTE: Since we just HIDE the window on close, we should NOT log logout here
+                 // unless the user intends to "Quit" via X.
+                 // Standard behavior for Tray apps is X -> Hide. 
+                 // If user wants X -> Logout & Quit, we change logic.
+                 // ASSUMPTION: User wants to track "Session End" or actual App Termination.
+                 // If X hides, session persists. So we only log on "Quit" or "Logout".
+                 // BUT user said "la app no se cierra desde la x... sino desde el tray pero no capturo nada".
+                 // So the issue is specifically TRAY QUIT.
+                 
+                 // However, "Close Manual" implies X. If X only hides, then it's NOT a logout.
+                 // I will ONLY Fix the Tray Quit logging for now as requested.
                 window.hide().unwrap();
                 api.prevent_close();
             }
@@ -216,4 +231,40 @@ pub fn run() {
         .invoke_handler(register_handlers!())
         .run(tauri::generate_context!())
         .expect("Error al ejecutar la aplicación");
+}
+
+/// Helper to log exit event synchronously block
+fn log_exit_event(app: &tauri::AppHandle, session: &SessionState, reason: &str) {
+    if let Some(user) = session.get_user() {
+        let duration = session.get_duration_string();
+        let ip = None; // Can't easily get async IP here without blocking, keep simple for now or fetch if cached
+        let config_state = app.state::<AppConfigState>();
+        
+        // We need to run async code in blocking context
+        tauri::async_runtime::block_on(async {
+             // 1. Get Terminal Info
+            let (terminal_id, terminal_name) = {
+                if let Ok(config) = config_state.read() {
+                    (config.terminal.id.clone(), config.terminal.nombre.clone())
+                } else {
+                    ("UNKNOWN".to_string(), "UNKNOWN".to_string())
+                }
+            };
+
+            // 2. Insert Log
+            use crate::db::surrealdb_audit_queries::insert_sys_log;
+            let _ = insert_sys_log(
+                terminal_id,
+                terminal_name,
+                user.full_name(), // Make sure full_name exists or use proper field
+                "LOGOUT".to_string(),
+                Some(duration),
+                ip, 
+                Some(reason.to_string()),
+            ).await;
+        });
+        
+        // Clear session
+        session.clear();
+    }
 }

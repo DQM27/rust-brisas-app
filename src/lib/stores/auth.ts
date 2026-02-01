@@ -28,6 +28,14 @@ export async function logout(): Promise<void> {
 	// Stop session monitoring first
 	stopSession();
 
+	// Audit Logout
+	const user = get(currentUser);
+	const settings = get(sessionSettings);
+	if (user && settings.enableSessionAudit) {
+		// No await needed, fire and forget
+		auditService.log('LOGOUT', user.nombreCompleto);
+	}
+
 	// Clear authentication state
 	isAuthenticated.set(false);
 	currentUser.set(null);

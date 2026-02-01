@@ -105,34 +105,32 @@ pub async fn insert_sys_log(
 ) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
 
-    let duration_val = duration.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null);
-    let ip_val = ip_address.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null);
-    let details_val = details.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null);
+    // Use plain Option<String> bindings but ensure we don't try to parse the result
+    // RETURN NONE ensures the DB returns nothing, and check() ensures we don't try to deserialize 'nothing' as a specific type inadvertently.
 
-    let _: Option<serde_json::Value> = db
-        .query(
-            r"
-            CREATE sys_audit_log CONTENT {
-                terminal_id: $terminal_id,
-                terminal_name: $terminal_name,
-                user_name: $user_name,
-                event_type: $event_type,
-                duration: $duration,
-                ip_address: $ip_address,
-                details: $details,
-                access_date: time::now()
-            }
-        ",
-        )
+    let sql = r"
+        CREATE sys_audit_log CONTENT {
+            terminal_id: $terminal_id,
+            terminal_name: $terminal_name,
+            user_name: $user_name,
+            event_type: $event_type,
+            duration: $duration,
+            ip_address: $ip_address,
+            details: $details,
+            access_date: time::now()
+        } RETURN NONE;
+    ";
+
+    db.query(sql)
         .bind(("terminal_id", terminal_id))
         .bind(("terminal_name", terminal_name))
         .bind(("user_name", user_name))
         .bind(("event_type", event_type))
-        .bind(("duration", duration_val))
-        .bind(("ip_address", ip_val))
-        .bind(("details", details_val))
+        .bind(("duration", duration))
+        .bind(("ip_address", ip_address))
+        .bind(("details", details))
         .await?
-        .take(0)?;
+        .check()?;
 
     Ok(())
 }

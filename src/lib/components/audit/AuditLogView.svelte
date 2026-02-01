@@ -19,7 +19,17 @@
 				const val = cell.getValue();
 				if (!val) return '';
 				try {
-					return new Date(val).toLocaleString('es-CR');
+					// Use 24-hour format as requested ("hora militar")
+					const date = new Date(val);
+					return date.toLocaleString('es-CR', {
+						year: 'numeric',
+						month: '2-digit',
+						day: '2-digit',
+						hour: '2-digit',
+						minute: '2-digit',
+						second: '2-digit',
+						hour12: false
+					});
 				} catch {
 					return val;
 				}
@@ -49,8 +59,13 @@
 		{
 			title: 'Terminal',
 			field: 'terminal_name',
+			width: 150
+		},
+		{
+			title: 'ID Terminal',
+			field: 'terminal_id',
 			width: 150,
-			tooltip: (cell: any) => cell.getData().terminal_id
+			headerFilter: 'input'
 		},
 		{
 			title: 'Duración',

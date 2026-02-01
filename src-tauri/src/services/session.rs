@@ -19,24 +19,33 @@ use std::sync::RwLock;
 // ESTADO DE SESIÓN (Contenedor de Seguridad)
 // ==========================================
 
+use std::time::SystemTime;
+
 /// Gestor centralizado de la sesión activa del usuario.
 /// Utiliza `RwLock` para permitir lecturas concurrentes rápidas
 /// y escrituras atómicas durante el login/logout.
 pub struct SessionState {
     current_user: RwLock<Option<SessionUser>>,
+    session_start_time: RwLock<Option<SystemTime>>,
 }
 
 impl SessionState {
     pub const fn new() -> Self {
-        Self { current_user: RwLock::new(None) }
+        Self { current_user: RwLock::new(None), session_start_time: RwLock::new(None) }
     }
 
     /// Inicia la sesión vinculando un usuario autenticado.
     pub fn set_user(&self, user: SessionUser) {
         info!("🔐 Sesión iniciada para el usuario: {} ({})", user.email, user.role_name);
-        let mut guard =
-            self.current_user.write().expect("Fallo crítico: Bloqueo de sesión corrompido");
-        *guard = Some(user);
+        {
+            let mut guard =
+                self.current_user.write().expect("Fallo crítico: Bloqueo de sesión corrompido");
+            *guard = Some(user);
+        }
+        {
+            let mut time_guard = self.session_start_time.write().expect("Lock fail");
+            *time_guard = Some(SystemTime::now());
+        }
     }
 
     /// Recupera los datos del usuario actual si existe una sesión activa.
@@ -49,14 +58,41 @@ impl SessionState {
         if let Some(user) = self.get_user() {
             info!("🔓 Sesión finalizada para el usuario: {}", user.email);
         }
-        let mut guard =
-            self.current_user.write().expect("Fallo crítico: Bloqueo de sesión corrompido");
-        *guard = None;
+        {
+            let mut guard =
+                self.current_user.write().expect("Fallo crítico: Bloqueo de sesión corrompido");
+            *guard = None;
+        }
+        {
+            let mut time_guard = self.session_start_time.write().expect("Lock fail");
+            *time_guard = None;
+        }
     }
 
     pub fn is_authenticated(&self) -> bool {
         let guard = self.current_user.read().expect("Fallo crítico: Bloqueo de sesión corrompido");
         guard.is_some()
+    }
+
+    /// Calcula la duración de la sesión actual
+    pub fn get_duration_string(&self) -> String {
+        let guard = self.session_start_time.read().expect("Lock fail");
+        if let Some(start) = *guard {
+            if let Ok(duration) = start.elapsed() {
+                let seconds = duration.as_secs();
+                let h = seconds / 3600;
+                let m = (seconds % 3600) / 60;
+                let s = seconds % 60;
+                if h > 0 {
+                    return format!("{}h {}m", h, m);
+                } else if m > 0 {
+                    return format!("{}m {}s", m, s);
+                } else {
+                    return format!("{}s", s);
+                }
+            }
+        }
+        "0s".to_string()
     }
 
     /// Control de Flujo: Asegura que el usuario esté presente antes de continuar.
