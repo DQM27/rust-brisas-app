@@ -115,6 +115,12 @@ pub async fn login(
     };
 
     session.set_user(session_user);
+
+    // Capture and store IP address
+    if let Ok(ip) = local_ip_address::local_ip() {
+        session.set_ip(ip.to_string());
+    }
+
     log::info!("✅ Sesión autorizada y establecida para: {}", user_response.email);
 
     Ok(user_response)

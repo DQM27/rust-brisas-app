@@ -27,11 +27,16 @@ use std::time::SystemTime;
 pub struct SessionState {
     current_user: RwLock<Option<SessionUser>>,
     session_start_time: RwLock<Option<SystemTime>>,
+    ip_address: RwLock<Option<String>>,
 }
 
 impl SessionState {
     pub const fn new() -> Self {
-        Self { current_user: RwLock::new(None), session_start_time: RwLock::new(None) }
+        Self {
+            current_user: RwLock::new(None),
+            session_start_time: RwLock::new(None),
+            ip_address: RwLock::new(None),
+        }
     }
 
     /// Inicia la sesión vinculando un usuario autenticado.
@@ -46,6 +51,16 @@ impl SessionState {
             let mut time_guard = self.session_start_time.write().expect("Lock fail");
             *time_guard = Some(SystemTime::now());
         }
+    }
+
+    pub fn set_ip(&self, ip: String) {
+        let mut guard = self.ip_address.write().expect("Lock fail");
+        *guard = Some(ip);
+    }
+
+    pub fn get_ip(&self) -> Option<String> {
+        let guard = self.ip_address.read().expect("Lock fail");
+        guard.clone()
     }
 
     /// Recupera los datos del usuario actual si existe una sesión activa.
@@ -66,6 +81,10 @@ impl SessionState {
         {
             let mut time_guard = self.session_start_time.write().expect("Lock fail");
             *time_guard = None;
+        }
+        {
+            let mut ip_guard = self.ip_address.write().expect("Lock fail");
+            *ip_guard = None;
         }
     }
 

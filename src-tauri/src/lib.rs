@@ -111,6 +111,20 @@ pub fn run() {
             tauri::async_runtime::block_on(async {
                 if is_configured {
                     info!("🌱 Sistema configurado previamente. Verificando integridad de datos...");
+                    
+                    // AUDIT: Detect Unexpected Closure
+                    let terminal_id = {
+                        if let Ok(config) = config_state.read() {
+                            config.terminal.id.clone()
+                        } else {
+                            "UNKNOWN".to_string()
+                        }
+                    };
+                    
+                    if let Err(e) = detect_unexpected_closure(&terminal_id).await {
+                        error!("⚠️ Error al verificar cierre inesperado: {e}");
+                    }
+
                     // Pasamos config_state para controlar si ya se hizo el seed
                     if let Err(e) = seed::seed_db(config_state.clone()).await {
                         error!("❌ Error durante la verificación de datos iniciales: {e}");
@@ -237,7 +251,7 @@ pub fn run() {
 fn log_exit_event(app: &tauri::AppHandle, session: &SessionState, reason: &str) {
     if let Some(user) = session.get_user() {
         let duration = session.get_duration_string();
-        let ip = None; // Can't easily get async IP here without blocking, keep simple for now or fetch if cached
+        let ip = session.get_ip();
         let config_state = app.state::<AppConfigState>();
         
         // We need to run async code in blocking context
@@ -267,4 +281,31 @@ fn log_exit_event(app: &tauri::AppHandle, session: &SessionState, reason: &str) 
         // Clear session
         session.clear();
     }
+}
+
+/// Detects if the previous session ended unexpectedly (e.g. crash, power loss, Ctrl+C)
+async fn detect_unexpected_closure(terminal_id: &str) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::db::surrealdb_audit_queries::{get_last_terminal_log, insert_sys_log};
+    
+    // 1. Get last log for this terminal
+    if let Ok(Some(last_log)) = get_last_terminal_log(terminal_id).await {
+        // 2. If it was a LOGIN, and it happened more than 10 seconds ago (to avoid race during fast restart)
+        // or just if it was a LOGIN, it means no LOGOUT followed.
+        if last_log.event_type == "LOGIN" {
+            info!("🚨 Cierre inesperado detectado para la terminal: {}. Registrando en auditoría...", terminal_id);
+            
+            // 3. Log the anomaly
+            insert_sys_log(
+                last_log.terminal_id,
+                last_log.terminal_name,
+                last_log.user_name,
+                "LOGOUT".to_string(), // We categorize it as a LOGOUT event (end of session)
+                None, // We can't easily calculate duration without knowing exact crash time
+                last_log.ip_address,
+                Some("Unexpected Closure (Crash/Force Quit detected)".to_string()),
+            ).await?;
+        }
+    }
+    
+    Ok(())
 }

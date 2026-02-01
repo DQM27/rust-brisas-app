@@ -367,7 +367,7 @@
 				{avatarUrl}
 				currentUser={$currentUser}
 				onOpenProfile={openProfile}
-				onLogout={logout}
+				onLogout={() => logout('User Logout (Sidebar)')}
 				onClose={() => (showProfileMenu = false)}
 			/>
 

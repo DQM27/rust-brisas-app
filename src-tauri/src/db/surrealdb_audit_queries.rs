@@ -165,3 +165,17 @@ pub async fn get_sys_logs(
 
     Ok(logs)
 }
+
+pub async fn get_last_terminal_log(
+    terminal_id: &str,
+) -> Result<Option<SysLogEntry>, SurrealDbError> {
+    let db = get_db().await?;
+
+    let logs: Vec<SysLogEntry> = db
+        .query("SELECT * FROM sys_audit_log WHERE terminal_id = $terminal_id ORDER BY access_date DESC LIMIT 1")
+        .bind(("terminal_id", terminal_id.to_string()))
+        .await?
+        .take(0)?;
+
+    Ok(logs.into_iter().next())
+}

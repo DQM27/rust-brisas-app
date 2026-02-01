@@ -103,9 +103,9 @@ export const systemShortcuts: ShortcutDefinition[] = [
 					title: 'Cerrar Sesión',
 					kind: 'info'
 				});
-				if (confirmed) logout();
+				if (confirmed) logout('User Logout (Shortcut)');
 			} catch {
-				if (confirm('¿Cerrar sesión ahora?')) logout();
+				if (confirm('¿Cerrar sesión ahora?')) logout('User Logout (Shortcut)');
 			}
 		}
 	}

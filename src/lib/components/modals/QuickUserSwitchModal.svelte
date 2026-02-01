@@ -15,7 +15,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 
 	import { auth } from '$lib/api/auth';
-	import { login, currentUser } from '$lib/stores/auth';
+	import { login, logout, currentUser } from '$lib/stores/auth';
 	import { toast } from 'svelte-5-french-toast';
 
 	// Types
@@ -140,8 +140,9 @@
 		error = '';
 
 		try {
+			await logout('Logout (Quick Switch)');
 			const userResponse = await auth.login(selectedUser.email, password);
-			login(userResponse);
+			login(userResponse, 'Quick Switch Login');
 			toast.success(`Sesión cambiada a ${userResponse.nombre}`);
 			handleClose();
 		} catch (err: any) {
