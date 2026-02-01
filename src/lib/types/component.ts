@@ -25,7 +25,6 @@ export type ComponentKey =
 	| 'trash-settings'
 	| 'roles-settings'
 	| 'shortcuts-settings'
-	| 'reportes-list'
 	| 'about'
 	| 'under-construction'
 	| 'dev-settings'

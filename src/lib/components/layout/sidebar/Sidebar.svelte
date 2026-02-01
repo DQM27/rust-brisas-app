@@ -23,7 +23,6 @@
 	import SidebarPanel from './SidebarPanel.svelte';
 	import ProfileMenu from './ProfileMenu.svelte';
 	import SettingsMenu from './SettingsMenu.svelte';
-
 	// Store & types
 	import { activePanel, openView } from '$lib/stores/sidebar';
 	import type { SidebarItem } from '../../../types/Sidebar';
@@ -133,7 +132,14 @@
 			id: 'logs',
 			icon: ScrollText,
 			label: 'Logs',
-			roleId: [ROLE_ADMIN_ID]
+			action: () => {
+				openTab({
+					componentKey: 'audit-log',
+					title: 'Auditoría del Sistema',
+					id: 'audit-log',
+					focusOnOpen: true
+				});
+			}
 		}
 	];
 
@@ -162,7 +168,15 @@
 		allSidebarItems.filter((item) => {
 			if (!item) return false;
 			if (item.permission && (!$currentUser || !can($currentUser, item.permission))) return false;
-			if (item.roleId && $currentUser && !item.roleId.includes($currentUser.roleId)) return false;
+
+			if (item.roleId && $currentUser) {
+				// Normalize role ID by removing table prefix if present
+				const userRoleId = $currentUser.roleId.includes(':')
+					? $currentUser.roleId.split(':')[1]
+					: $currentUser.roleId;
+
+				if (!item.roleId.includes(userRoleId)) return false;
+			}
 			return true;
 		})
 	);

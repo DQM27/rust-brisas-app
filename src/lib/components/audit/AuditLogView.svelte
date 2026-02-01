@@ -14,11 +14,15 @@
 			title: 'Fecha',
 			field: 'access_date',
 			width: 180,
-			sorter: 'datetime',
-			formatter: 'datetime',
-			formatterParams: {
-				outputFormat: 'DD/MM/YYYY hh:mm a',
-				invalidPlaceholder: '(Fecha Inválida)'
+			sorter: 'string', // Simple string sort since ISO dates sort correctly alphabetically
+			formatter: (cell: any) => {
+				const val = cell.getValue();
+				if (!val) return '';
+				try {
+					return new Date(val).toLocaleString('es-CR');
+				} catch {
+					return val;
+				}
 			}
 		},
 		{

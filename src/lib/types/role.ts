@@ -53,5 +53,5 @@ export interface VisibleModule {
 
 // Constantes de roles del sistema
 // Constantes de roles del sistema (Coinciden con backend/domain/role.rs)
-export const ROLE_ADMIN_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-export const ROLE_GUARDIA_ID = '27221d6e-9818-430c-99c3-5694a971216b';
+export const ROLE_ADMIN_ID = '019b93da-9d13-71ad-903f-ee0dae187f6b';
+export const ROLE_GUARDIA_ID = '019b93da-9d17-751b-8e6a-0a09529a6982';

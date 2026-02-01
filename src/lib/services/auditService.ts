@@ -35,6 +35,7 @@ export const auditService = {
             console.log('[Audit] Event logged:', event_type);
         } catch (error) {
             console.error('[Audit] Failed to log event:', error);
+            try { console.error('Error Details:', JSON.stringify(error, null, 2)); } catch (e) { }
             // No lanzamos error para no interrumpir la experiencia de usuario (es un log secundario)
         }
     },

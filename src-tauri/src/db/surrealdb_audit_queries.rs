@@ -105,6 +105,10 @@ pub async fn insert_sys_log(
 ) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
 
+    let duration_val = duration.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null);
+    let ip_val = ip_address.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null);
+    let details_val = details.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null);
+
     let _: Option<serde_json::Value> = db
         .query(
             r"
@@ -124,9 +128,9 @@ pub async fn insert_sys_log(
         .bind(("terminal_name", terminal_name))
         .bind(("user_name", user_name))
         .bind(("event_type", event_type))
-        .bind(("duration", duration))
-        .bind(("ip_address", ip_address))
-        .bind(("details", details))
+        .bind(("duration", duration_val))
+        .bind(("ip_address", ip_val))
+        .bind(("details", details_val))
         .await?
         .take(0)?;
 
