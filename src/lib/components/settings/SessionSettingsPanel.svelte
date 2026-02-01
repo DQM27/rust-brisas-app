@@ -234,6 +234,142 @@
 			{/if}
 		</div>
 
+		<!-- Quick Access Settings -->
+		<div class="rounded border border-emphasis bg-surface-1 p-3">
+			<div class="flex items-center justify-between mb-2">
+				<div>
+					<h4 class="text-sm font-medium text-primary">Accesos Rápidos</h4>
+					<p class="text-[11px] text-secondary">Atajos de teclado y menú</p>
+				</div>
+				<!-- No master toggle for this section, just a header placeholder or individual controls -->
+			</div>
+
+			<div class="space-y-3 pt-2">
+				<!-- Quick Session Switch -->
+				<div class="flex items-center justify-between">
+					<div>
+						<div class="text-xs text-primary font-medium">Cambio Rápido de Sesión</div>
+						<div class="text-[10px] text-secondary">
+							Permite cambiar de usuario rápidamente con <span
+								class="font-mono bg-surface-3 px-1 rounded">Ctrl+Shift+U</span
+							>
+						</div>
+					</div>
+					<label class="relative inline-flex items-center cursor-pointer">
+						<input
+							type="checkbox"
+							checked={$sessionSettings.enableQuickSessionSwitch}
+							onchange={() => sessionSettings.toggleQuickSessionSwitch()}
+							disabled={!canUpdate}
+							class="sr-only peer"
+						/>
+						<div
+							class="w-9 h-5 bg-gray-600/50 rounded-full peer peer-checked:bg-purple-500 peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform peer-checked:after:translate-x-full"
+						></div>
+					</label>
+				</div>
+
+				<!-- Logout Shortcut -->
+				<div class="flex items-center justify-between border-t border-surface pt-2">
+					<div>
+						<div class="text-xs text-primary font-medium">Atajo de Cierre de Sesión</div>
+						<div class="text-[10px] text-secondary">
+							Habilita <span class="font-mono bg-surface-3 px-1 rounded">Ctrl+Q</span> para cerrar sesión
+							inmediatamente
+						</div>
+					</div>
+					<label class="relative inline-flex items-center cursor-pointer">
+						<input
+							type="checkbox"
+							checked={$sessionSettings.enableLogoutShortcut}
+							onchange={() => sessionSettings.toggleLogoutShortcut()}
+							disabled={!canUpdate}
+							class="sr-only peer"
+						/>
+						<div
+							class="w-9 h-5 bg-gray-600/50 rounded-full peer peer-checked:bg-purple-500 peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform peer-checked:after:translate-x-full"
+						></div>
+					</label>
+				</div>
+			</div>
+		</div>
+
+		<!-- Enhancement Settings -->
+		<div class="rounded border border-emphasis bg-surface-1 p-3">
+			<div class="flex items-center justify-between mb-2">
+				<div>
+					<h4 class="text-sm font-medium text-primary">Experiencia y Auditoría</h4>
+					<p class="text-[11px] text-secondary">Ajustes avanzados de seguridad y UX</p>
+				</div>
+			</div>
+
+			<div class="space-y-3 pt-2">
+				<!-- Pre-Logout Warning -->
+				<div class="flex items-center justify-between">
+					<div>
+						<div class="text-xs text-primary font-medium">Alerta de Pre-Desconexión</div>
+						<div class="text-[10px] text-secondary">
+							Avisa 60s antes de cerrar sesión por inactividad
+						</div>
+					</div>
+					<label class="relative inline-flex items-center cursor-pointer">
+						<input
+							type="checkbox"
+							checked={$sessionSettings.enablePreLogoutWarning}
+							onchange={() => sessionSettings.togglePreLogoutWarning()}
+							disabled={!canUpdate}
+							class="sr-only peer"
+						/>
+						<div
+							class="w-9 h-5 bg-gray-600/50 rounded-full peer peer-checked:bg-teal-500 peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform peer-checked:after:translate-x-full"
+						></div>
+					</label>
+				</div>
+
+				<!-- Grace Period -->
+				<div class="flex items-center justify-between border-t border-surface pt-2">
+					<div>
+						<div class="text-xs text-primary font-medium">Periodo de Gracia</div>
+						<div class="text-[10px] text-secondary">
+							Permite cancelar bloqueo accidentalmente (2s)
+						</div>
+					</div>
+					<label class="relative inline-flex items-center cursor-pointer">
+						<input
+							type="checkbox"
+							checked={$sessionSettings.enableGracePeriod}
+							onchange={() => sessionSettings.toggleGracePeriod()}
+							disabled={!canUpdate}
+							class="sr-only peer"
+						/>
+						<div
+							class="w-9 h-5 bg-gray-600/50 rounded-full peer peer-checked:bg-teal-500 peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform peer-checked:after:translate-x-full"
+						></div>
+					</label>
+				</div>
+
+				<!-- Audit Log -->
+				<div class="flex items-center justify-between border-t border-surface pt-2">
+					<div>
+						<div class="text-xs text-primary font-medium">Auditoría de Cierres</div>
+						<div class="text-[10px] text-secondary">Registra eventos de desconexión en el log</div>
+					</div>
+					<label class="relative inline-flex items-center cursor-pointer">
+						<input
+							type="checkbox"
+							checked={$sessionSettings.enableSessionAudit}
+							onchange={() => sessionSettings.toggleSessionAudit()}
+							disabled={!canUpdate}
+							class="sr-only peer"
+						/>
+						<div
+							class="w-9 h-5 bg-gray-600/50 rounded-full peer peer-checked:bg-teal-500 peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform peer-checked:after:translate-x-full"
+						></div>
+					</label>
+				</div>
+			</div>
+		</div>
+
 		<!-- Info Footnote (Compact) -->
 		<div
 			class="px-3 py-2 bg-blue-500/5 border border-blue-500/10 rounded text-[10px] text-secondary leading-tight"
@@ -243,3 +379,4 @@
 		</div>
 	</div>
 </div>
+```

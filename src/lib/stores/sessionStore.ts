@@ -4,6 +4,7 @@ import { sessionSettings } from './sessionSettingsStore';
 import { logout, currentUser } from './auth';
 import { openTab } from './tabs';
 import { getSystemIdleMinutes } from '$lib/services/systemIdleService';
+import { auditService } from '$lib/services/auditService';
 
 // =============================================================================
 // TYPES
@@ -18,6 +19,7 @@ interface SessionState {
 	appHasFocus: boolean; // Current focus state
 	screensaverActive: boolean;
 	awaitingPasswordForScreensaver: boolean;
+	sessionStartTime: number;
 }
 
 // =============================================================================
@@ -30,7 +32,8 @@ const initialState: SessionState = {
 	lastAppFocusTime: Date.now(),
 	appHasFocus: true,
 	screensaverActive: false,
-	awaitingPasswordForScreensaver: false
+	awaitingPasswordForScreensaver: false,
+	sessionStartTime: Date.now()
 };
 
 const sessionState = writable<SessionState>(initialState);
@@ -43,14 +46,31 @@ let activityListenersActive = false;
 let checkIntervalId: ReturnType<typeof setInterval> | null = null;
 let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 let screensaverCooldown = false; // Flag to prevent immediate deactivation after screensaver activates
+let lockTimestamp = 0; // Timestamp when lock/screensaver was entered (for grace period)
 
 /**
  * Updates the last activity time (debounced to avoid excessive updates)
  * NOW ONLY USED to exit screensaver when password is not required
  */
 function recordActivity(): void {
-	// Don't record activity if we're waiting for screensaver password
 	const state = get(sessionState);
+	const settings = get(sessionSettings);
+
+	// 1. GRACE PERIOD CHECK
+	// If currently locked/screensaver, and we are within grace period (e.g. 2s), unlock immediately
+	if (settings.enableGracePeriod && (state.mode === 'locked' || state.screensaverActive)) {
+		if (lockTimestamp > 0 && Date.now() - lockTimestamp < 2000) {
+			console.log('[Session] Exiting due to Grace Period');
+			exitScreensaver();
+			// Also unlock app if it was just app locked
+			if (state.mode === 'locked') {
+				sessionState.update((s) => ({ ...s, mode: 'active', awaitingPasswordForScreensaver: false }));
+			}
+			return;
+		}
+	}
+
+	// Don't record activity if we're waiting for screensaver password
 	if (state.awaitingPasswordForScreensaver) {
 		return;
 	}
@@ -72,7 +92,6 @@ function recordActivity(): void {
 
 		// If screensaver is active and no password required, exit it
 		const currentState = get(sessionState);
-		const settings = get(sessionSettings);
 
 		if (currentState.screensaverActive && !settings.screensaverRequiresPassword) {
 			exitScreensaver();
@@ -123,6 +142,9 @@ function detachActivityListeners(): void {
 // TIMEOUT CHECKING (Dual Mode: App Focus + System Idle)
 // =============================================================================
 
+// Warning state
+const showWarningState = writable(false);
+
 /**
  * Checks if timeouts have been reached and triggers appropriate actions
  * Handles TWO independent lock mechanisms:
@@ -159,9 +181,23 @@ async function checkTimeouts(): Promise<void> {
 	const systemIdleMinutes = await getSystemIdleMinutes();
 
 	// Check for complete logout timeout (highest priority)
-	if (settings.enableCompleteTimeout && systemIdleMinutes >= settings.completeTimeoutMinutes) {
-		performCompleteLogout();
-		return;
+	if (settings.enableCompleteTimeout) {
+
+		// WARNING LOGIC
+		if (settings.enablePreLogoutWarning) {
+			// Warn 1 minute before
+			const warnThreshold = settings.completeTimeoutMinutes - 1;
+			if (systemIdleMinutes >= warnThreshold && systemIdleMinutes < settings.completeTimeoutMinutes) {
+				showWarningState.set(true);
+			} else {
+				showWarningState.set(false);
+			}
+		}
+
+		if (systemIdleMinutes >= settings.completeTimeoutMinutes) {
+			performCompleteLogout('System Idle Timeout (SessionStore)');
+			return;
+		}
 	}
 
 	// Check for screensaver timeout (only if not already in screensaver)
@@ -202,6 +238,7 @@ function stopTimeoutChecker(): void {
  * Enters locked mode (app-level lock, no screensaver)
  */
 export function enterLockedMode(): void {
+	lockTimestamp = Date.now(); // Record time for grace period
 	sessionState.update((s) => ({
 		...s,
 		mode: 'locked',
@@ -214,6 +251,8 @@ export function enterLockedMode(): void {
  * Enters screensaver mode (PC-wide idle)
  */
 export function enterScreensaver(): void {
+	lockTimestamp = Date.now(); // Record time for grace period
+
 	// Set cooldown to prevent activity detection during tab opening
 	screensaverCooldown = true;
 
@@ -267,6 +306,7 @@ export function attemptExitScreensaver(): void {
  * Exits screensaver mode (after password verification or if no password required)
  */
 export function exitScreensaver(): void {
+	showWarningState.set(false); // Clear warning if active
 	sessionState.update((s) => ({
 		...s,
 		mode: 'active',
@@ -297,17 +337,41 @@ export async function cancelScreensaverPassword(): Promise<void> {
 		}
 	}
 
-	performCompleteLogout();
+	performCompleteLogout('User Cancelled Password');
 }
 
 // =============================================================================
 // LOGOUT MANAGEMENT
 // =============================================================================
 
+function formatDuration(ms: number): string {
+	const seconds = Math.floor(ms / 1000);
+	const h = Math.floor(seconds / 3600);
+	const m = Math.floor((seconds % 3600) / 60);
+	const s = seconds % 60;
+
+	if (h > 0) return `${h}h ${m}m`;
+	if (m > 0) return `${m}m ${s}s`;
+	return `${s}s`;
+}
+
 /**
  * Performs a complete logout (closes all tabs, clears session)
  */
-function performCompleteLogout(): void {
+function performCompleteLogout(reason = 'Unknown'): void {
+	// Audit Logging
+	const settings = get(sessionSettings);
+	const user = get(currentUser);
+	const state = get(sessionState);
+
+	if (settings.enableSessionAudit && user) {
+		const durationMs = Date.now() - state.sessionStartTime;
+		const durationStr = formatDuration(durationMs);
+		const eventType = reason.includes('Timeout') ? 'TIMEOUT' : 'LOGOUT';
+
+		auditService.log(eventType, user.nombreCompleto, reason, durationStr);
+	}
+
 	// Stop all session monitoring
 	stopSession();
 
@@ -332,8 +396,10 @@ export function startSession(): void {
 		lastAppFocusTime: Date.now(),
 		appHasFocus: true,
 		screensaverActive: false,
-		awaitingPasswordForScreensaver: false
+		awaitingPasswordForScreensaver: false,
+		sessionStartTime: Date.now()
 	});
+	showWarningState.set(false);
 
 	// Start activity tracking
 	attachActivityListeners();
@@ -362,6 +428,7 @@ export function stopSession(): void {
 
 	// Reset state
 	sessionState.set(initialState);
+	showWarningState.set(false);
 }
 
 // =============================================================================
@@ -375,6 +442,7 @@ export const awaitingScreensaverPassword = derived(
 	($state) => $state.awaitingPasswordForScreensaver
 );
 export const sessionMode = derived(sessionState, ($state) => $state.mode);
+export const showLogoutWarning = derived(showWarningState, ($s) => $s);
 
 // For debugging (can be removed in production)
 export const sessionDebugInfo = derived([sessionState, sessionSettings], ([$state, $settings]) => {

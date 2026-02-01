@@ -10,6 +10,7 @@ import { toggleTheme } from '$lib/stores/themeStore';
 import { logout } from '$lib/stores/auth';
 import { activeTabId, closeTab } from '$lib/stores/tabs';
 import { get } from 'svelte/store';
+import { sessionSettings } from '$lib/stores/sessionSettingsStore';
 
 export const systemShortcuts: ShortcutDefinition[] = [
 	{
@@ -21,6 +22,8 @@ export const systemShortcuts: ShortcutDefinition[] = [
 		scope: 'all',
 		icon: 'UserRoundPen',
 		handler: (e) => {
+			const settings = get(sessionSettings);
+			if (!settings.enableQuickSessionSwitch) return;
 			e.preventDefault();
 			showQuickSwitch.update((v) => !v);
 		}
@@ -90,6 +93,9 @@ export const systemShortcuts: ShortcutDefinition[] = [
 		scope: 'all',
 		icon: 'LogOut',
 		handler: async (e) => {
+			const settings = get(sessionSettings);
+			if (!settings.enableLogoutShortcut) return;
+
 			e.preventDefault();
 			try {
 				const { ask } = await import('@tauri-apps/plugin-dialog');

@@ -338,6 +338,19 @@ DEFINE EVENT log_user_delete ON TABLE user WHEN $event = "DELETE" THEN {
 };
 
 -- =========================================================
+-- Tabla SYS_AUDIT_LOG (Accesos del Sistema/Terminal)
+-- =========================================================
+DEFINE TABLE sys_audit_log SCHEMAFULL;
+DEFINE FIELD terminal_id ON TABLE sys_audit_log TYPE string;
+DEFINE FIELD terminal_name ON TABLE sys_audit_log TYPE string;
+DEFINE FIELD user_name ON TABLE sys_audit_log TYPE string;
+DEFINE FIELD event_type ON TABLE sys_audit_log TYPE string ASSERT $value INSIDE ['LOGIN', 'LOGOUT', 'TIMEOUT', 'FAILED_LOGIN'];
+DEFINE FIELD duration ON TABLE sys_audit_log TYPE option<string>;
+DEFINE FIELD ip_address ON TABLE sys_audit_log TYPE option<string>;
+DEFINE FIELD details ON TABLE sys_audit_log TYPE option<string>;
+DEFINE FIELD access_date ON TABLE sys_audit_log TYPE datetime DEFAULT time::now();
+
+-- =========================================================
 -- 7. GESTIÓN DE MÓDULOS (Feature Flags / Dev Mode)
 -- =========================================================
 DEFINE TABLE module SCHEMAFULL;

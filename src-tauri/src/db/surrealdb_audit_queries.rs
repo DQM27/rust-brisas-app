@@ -89,3 +89,77 @@ pub async fn insert_historial_estado(
 
     Ok(())
 }
+
+// ==========================================
+// SYSTEM AUDIT LOGS
+// ==========================================
+
+pub async fn insert_sys_log(
+    terminal_id: String,
+    terminal_name: String,
+    user_name: String,
+    event_type: String, // LOGIN, LOGOUT, TIMEOUT
+    duration: Option<String>,
+    ip_address: Option<String>,
+    details: Option<String>,
+) -> Result<(), SurrealDbError> {
+    let db = get_db().await?;
+
+    let _: Option<serde_json::Value> = db
+        .query(
+            r"
+            CREATE sys_audit_log CONTENT {
+                terminal_id: $terminal_id,
+                terminal_name: $terminal_name,
+                user_name: $user_name,
+                event_type: $event_type,
+                duration: $duration,
+                ip_address: $ip_address,
+                details: $details,
+                access_date: time::now()
+            }
+        ",
+        )
+        .bind(("terminal_id", terminal_id))
+        .bind(("terminal_name", terminal_name))
+        .bind(("user_name", user_name))
+        .bind(("event_type", event_type))
+        .bind(("duration", duration))
+        .bind(("ip_address", ip_address))
+        .bind(("details", details))
+        .await?
+        .take(0)?;
+
+    Ok(())
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct SysLogEntry {
+    pub id: surrealdb::sql::Thing,
+    pub terminal_id: String,
+    pub terminal_name: String,
+    pub user_name: String,
+    pub event_type: String,
+    pub duration: Option<String>,
+    pub ip_address: Option<String>,
+    pub details: Option<String>,
+    pub access_date: surrealdb::sql::Datetime,
+}
+
+pub async fn get_sys_logs(
+    limit: Option<u32>,
+    offset: Option<u32>,
+) -> Result<Vec<SysLogEntry>, SurrealDbError> {
+    let db = get_db().await?;
+    let limit_val = limit.unwrap_or(50);
+    let offset_val = offset.unwrap_or(0);
+
+    let logs: Vec<SysLogEntry> = db
+        .query("SELECT * FROM sys_audit_log ORDER BY access_date DESC LIMIT $limit START $offset")
+        .bind(("limit", limit_val))
+        .bind(("offset", offset_val))
+        .await?
+        .take(0)?;
+
+    Ok(logs)
+}

@@ -22,15 +22,15 @@
 	<div class="panel-section-title">REGISTROS DEL SISTEMA</div>
 	<button
 		class="panel-item"
-		onclick={executeAndClose(() => openView('dashboard', 'Registros del Sistema'))}
+		onclick={executeAndClose(() => openView('audit-log', 'Auditoría del Sistema'))}
 		onkeydown={(e) =>
 			handleKeydown(
 				e,
-				executeAndClose(() => openView('dashboard', 'Registros del Sistema'))
+				executeAndClose(() => openView('audit-log', 'Auditoría del Sistema'))
 			)}
 	>
 		<Search size={16} />
-		<span>Buscar en registros</span>
+		<span>Auditoría del Sistema</span>
 	</button>
 	<button
 		class="panel-item"

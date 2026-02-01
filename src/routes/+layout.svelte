@@ -32,6 +32,7 @@
 		attemptExitScreensaver
 	} from '$lib/stores/sessionStore';
 	import ScreensaverPasswordModal from '$lib/components/ScreensaverPasswordModal.svelte';
+	import SessionWarningModal from '$lib/components/modals/SessionWarningModal.svelte';
 	import { modulesStore } from '$lib/stores/modules'; // Import modulesStore
 	import { showUserProfileModal, selectedUserProfile } from '$lib/stores/ui';
 	import { openTab } from '$lib/stores/tabs';
@@ -314,5 +315,8 @@
 		{#if showPasswordModal}
 			<ScreensaverPasswordModal />
 		{/if}
+
+		<!-- Session Warning Modal -->
+		<SessionWarningModal />
 	</div>
 {/if}

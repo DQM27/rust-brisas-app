@@ -36,6 +36,8 @@ import VisitanteListView from '$lib/components/visitante/VisitanteListView.svelt
 import UnderConstruction from '$lib/components/common/UnderConstruction.svelte';
 import DevSettingsPanel from '$lib/components/settings/DevSettingsPanel.svelte';
 
+import AuditLogView from '$lib/components/audit/AuditLogView.svelte';
+
 /**
  * Registry central de componentes
  * Permite serializar tabs y reconstruirlos después
@@ -75,7 +77,8 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
 	'ingreso-module': IngresoModule,
 	'proveedor-ingreso-list': IngresoProveedorModule,
 	'under-construction': UnderConstruction,
-	'dev-settings': DevSettingsPanel
+	'dev-settings': DevSettingsPanel,
+	'audit-log': AuditLogView
 };
 
 /**

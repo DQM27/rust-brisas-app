@@ -13,6 +13,12 @@ export interface SessionSettings {
 	screensaverRequiresPassword: boolean;
 	enableCompleteTimeout: boolean;
 	completeTimeoutMinutes: number;
+	enableQuickSessionSwitch: boolean;
+	enableLogoutShortcut: boolean;
+	// Enhancements
+	enablePreLogoutWarning: boolean;
+	enableSessionAudit: boolean;
+	enableGracePeriod: boolean;
 }
 
 // =============================================================================
@@ -26,7 +32,12 @@ const DEFAULT_SETTINGS: SessionSettings = {
 	screensaverTimeoutMinutes: 20,
 	screensaverRequiresPassword: true,
 	enableCompleteTimeout: true,
-	completeTimeoutMinutes: 60
+	completeTimeoutMinutes: 60,
+	enableQuickSessionSwitch: true,
+	enableLogoutShortcut: true,
+	enablePreLogoutWarning: true,
+	enableSessionAudit: true,
+	enableGracePeriod: true
 };
 
 // =============================================================================
@@ -82,6 +93,13 @@ function validateSettings(settings: SessionSettings): SessionSettings {
 			validated.completeTimeoutMinutes = validated.screensaverTimeoutMinutes + 10;
 		}
 	}
+	// Ensure new properties exist if loading from old storage
+	if (validated.enableQuickSessionSwitch === undefined) validated.enableQuickSessionSwitch = true;
+	if (validated.enableLogoutShortcut === undefined) validated.enableLogoutShortcut = true;
+	if (validated.enablePreLogoutWarning === undefined) validated.enablePreLogoutWarning = true;
+	if (validated.enableSessionAudit === undefined) validated.enableSessionAudit = true;
+	if (validated.enableGracePeriod === undefined) validated.enableGracePeriod = true;
+
 	return validated;
 }
 
@@ -95,6 +113,11 @@ export interface SessionSettingsStore extends Writable<SessionSettings> {
 	toggleScreensaver: () => void;
 	toggleCompleteTimeout: () => void;
 	toggleScreensaverPassword: () => void;
+	toggleQuickSessionSwitch: () => void;
+	toggleLogoutShortcut: () => void;
+	togglePreLogoutWarning: () => void;
+	toggleSessionAudit: () => void;
+	toggleGracePeriod: () => void;
 	setAppLockTimeout: (minutes: number) => void;
 	setScreensaverTimeout: (minutes: number) => void;
 	setCompleteTimeout: (minutes: number) => void;
@@ -128,6 +151,16 @@ function createSessionSettingsStore(): SessionSettingsStore {
 			update((s) => ({ ...s, enableCompleteTimeout: !s.enableCompleteTimeout })),
 		toggleScreensaverPassword: () =>
 			update((s) => ({ ...s, screensaverRequiresPassword: !s.screensaverRequiresPassword })),
+		toggleQuickSessionSwitch: () =>
+			update((s) => ({ ...s, enableQuickSessionSwitch: !s.enableQuickSessionSwitch })),
+		toggleLogoutShortcut: () =>
+			update((s) => ({ ...s, enableLogoutShortcut: !s.enableLogoutShortcut })),
+		togglePreLogoutWarning: () =>
+			update((s) => ({ ...s, enablePreLogoutWarning: !s.enablePreLogoutWarning })),
+		toggleSessionAudit: () =>
+			update((s) => ({ ...s, enableSessionAudit: !s.enableSessionAudit })),
+		toggleGracePeriod: () =>
+			update((s) => ({ ...s, enableGracePeriod: !s.enableGracePeriod })),
 		setAppLockTimeout: (minutes: number) =>
 			update((s) => ({ ...s, appLockTimeoutMinutes: minutes })),
 		setScreensaverTimeout: (minutes: number) =>
