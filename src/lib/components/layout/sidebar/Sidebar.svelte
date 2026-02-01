@@ -143,6 +143,15 @@
 	let showAboutModal = $state(false);
 	let showProfileMenu = $state(false);
 
+	// Mutual exclusivity
+	$effect(() => {
+		if (showSettingsMenu) showProfileMenu = false;
+	});
+
+	$effect(() => {
+		if (showProfileMenu) showSettingsMenu = false;
+	});
+
 	function handleWindowClick() {
 		if (showSettingsMenu) showSettingsMenu = false;
 		if (showProfileMenu) showProfileMenu = false;
