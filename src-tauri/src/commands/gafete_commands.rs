@@ -52,14 +52,42 @@ pub async fn get_all_gafetes(
     let list = gafete_service::get_all_gafetes().await?;
     let total = list.len();
 
-    // TODO: Calcular stats reales si es necesario, por ahora placeholders o lógica simple
+    // Calcular estadísticas reales
+    let mut disponibles = 0;
+    let mut en_uso = 0;
+    let mut danados = 0;
+    let mut extraviados = 0;
+    let mut contratistas = 0;
+    let mut proveedores = 0;
+    let mut visitas = 0;
+    let mut otros = 0;
+
+    for gafete in &list {
+        // Contar por estado (usando campo 'status')
+        match gafete.status.to_lowercase().as_str() {
+            "disponible" => disponibles += 1,
+            "en_uso" | "enuso" | "en uso" => en_uso += 1,
+            "danado" | "dañado" => danados += 1,
+            "extraviado" | "perdido" => extraviados += 1,
+            _ => disponibles += 1, // Default a disponible
+        }
+
+        // Contar por tipo (usando enum TipoGafete)
+        match gafete.tipo.as_str() {
+            "contratista" => contratistas += 1,
+            "proveedor" => proveedores += 1,
+            "visita" => visitas += 1,
+            _ => otros += 1,
+        }
+    }
+
     let stats = StatsGafetes {
         total,
-        disponibles: 0, // Se calcularían iterando la lista si fuera necesario
-        en_uso: 0,
-        danados: 0,
-        extraviados: 0,
-        por_tipo: StatsPorTipo { contratistas: 0, proveedores: 0, visitas: 0, otros: 0 },
+        disponibles,
+        en_uso,
+        danados,
+        extraviados,
+        por_tipo: StatsPorTipo { contratistas, proveedores, visitas, otros },
     };
 
     Ok(GafeteListResponse { gafetes: list, total, stats })

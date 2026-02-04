@@ -222,8 +222,14 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
 			});
 			break;
 		case 'action-reindex':
-			// TODO: Implementar llamada global a reindexado si es accesible
-			console.log('Solicitud de reindexado desde Spotlight');
+			// Llamar al comando de reindexado global
+			invoke('trigger_reindex')
+				.then(() => {
+					console.log('Reindexado global completado');
+				})
+				.catch((err) => {
+					console.error('Error en reindexado:', err);
+				});
 			break;
 	}
 	onClose();

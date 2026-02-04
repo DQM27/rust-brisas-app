@@ -256,8 +256,8 @@
 			};
 
 			if (editingId) {
+				// Update lanza excepción si falla, el éxito se asume si no hay error
 				await preRegistroVisitaService.update(editingId, input);
-				// TODO: Check if update returns new data, but generally we just need success
 			} else {
 				await preRegistroVisitaService.create(input);
 			}

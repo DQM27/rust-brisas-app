@@ -399,12 +399,31 @@ where
 
         let mut responses = Vec::with_capacity(activos.len());
         for ing in activos {
-            let resp = IngresoResponse::from_contratista_fetched(ing);
+            let resp = IngresoResponse::from_contratista_fetched(ing.clone());
+
+            // Calcular minutos transcurridos desde el ingreso
+            let fecha_ingreso_str = ing.fecha_hora_ingreso.to_string();
+            let fecha_ingreso_iso =
+                fecha_ingreso_str.trim_start_matches("d'").trim_end_matches('\'');
+            let minutos =
+                crate::domain::ingreso_contratista::calcular_tiempo_transcurrido(fecha_ingreso_iso)
+                    .unwrap_or(0);
+
+            // Evaluar estado de permanencia
+            let estado_permanencia =
+                crate::domain::ingreso_contratista::evaluar_estado_permanencia(minutos);
+            let estado_str = match estado_permanencia {
+                crate::domain::ingreso_contratista::EstadoPermanencia::Normal => "Normal",
+                crate::domain::ingreso_contratista::EstadoPermanencia::Alerta => "Alerta",
+                crate::domain::ingreso_contratista::EstadoPermanencia::TiempoExcedido => {
+                    "TiempoExcedido"
+                }
+            };
 
             responses.push(IngresoConEstadoResponse {
                 ingreso: resp,
-                minutos_transcurridos: 0, // TODO: Calcular tiempo real si es necesario
-                estado: "Normal".to_string(),
+                minutos_transcurridos: minutos,
+                estado: estado_str.to_string(),
             });
         }
 

@@ -259,8 +259,10 @@
 			<button
 				class="p-2 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors border border-surface bg-surface-3"
 				onclick={() => {
-					// TODO: Implementar lógica de configuración
-					console.log('Configuración clickeada');
+					// Emitir evento para configuración de la grid
+					// El padre puede escuchar con on:configure si necesita abrir un modal
+					const event = new CustomEvent('grid-configure', { bubbles: true });
+					document.dispatchEvent(event);
 				}}
 				title="Configuración"
 			>

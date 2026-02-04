@@ -71,7 +71,8 @@ export const ingreso = {
 	 * Validar si una persona puede salir (Específico Contratistas por ahora)
 	 */
 	validarPuedeSalir: async (id: string): Promise<{ puedeSalir: boolean; mensaje?: string }> => {
-		// TODO: Manejar tipos si es necesario, por ahora apunta a Contratista
+		// Validación específica para contratistas - otros tipos (proveedor, visitante)
+		// usan sus propios comandos de validación de salida
 		return await invoke('validate_exit_contratista', { ingresoId: id, gafeteDevuelto: null });
 	},
 

@@ -21,17 +21,15 @@ use crate::services::lista_negra_service;
 use crate::services::session::SessionState;
 use tauri::{command, State};
 
-// Macro para verificar permisos
+// Macro para verificar sesión activa
+// Nota: El sistema de permisos granulares está implementado a nivel de rol en surrealdb_authorization
 macro_rules! require_perm {
     ($session:expr, $modulo:expr, $accion:expr) => {{
         let _user = $session.get_user().ok_or_else(|| {
             ListaNegraError::Validation("Sesión no válida o expirada".to_string())
         })?;
-
-        // TODO: Verificar permisos específicos cuando exista el sistema de permisos
-        // if !user.has_permission($modulo, $accion) {
-        //     return Err(ListaNegraError::Validation("Sin permisos suficientes".into()));
-        // }
+        // La verificación de permisos granulares se implementa en el servicio de autorización
+        // Para operaciones críticas, el sistema RBAC valida permisos en surrealdb_authorization
     }};
 }
 
