@@ -294,8 +294,7 @@ async fn detect_unexpected_closure(terminal_id: &str) -> Result<(), Box<dyn std:
         // or just if it was a LOGIN, it means no LOGOUT followed.
         if last_log.event_type == "LOGIN" {
             info!(
-                "🚨 Cierre inesperado detectado para la terminal: {}. Registrando en auditoría...",
-                terminal_id
+                "🚨 Cierre inesperado detectado para la terminal: {terminal_id}. Registrando en auditoría..."
             );
 
             // 3. Log the anomaly

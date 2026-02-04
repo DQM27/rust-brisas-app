@@ -103,12 +103,12 @@ impl SessionState {
                 let m = (seconds % 3600) / 60;
                 let s = seconds % 60;
                 if h > 0 {
-                    return format!("{}h {}m", h, m);
-                } else if m > 0 {
-                    return format!("{}m {}s", m, s);
-                } else {
-                    return format!("{}s", s);
+                    return format!("{h}h {m}m");
                 }
+                if m > 0 {
+                    return format!("{m}m {s}s");
+                }
+                return format!("{s}s");
             }
         }
         "0s".to_string()
