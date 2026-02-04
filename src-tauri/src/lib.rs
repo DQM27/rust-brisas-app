@@ -111,7 +111,7 @@ pub fn run() {
             tauri::async_runtime::block_on(async {
                 if is_configured {
                     info!("🌱 Sistema configurado previamente. Verificando integridad de datos...");
-                    
+
                     // AUDIT: Detect Unexpected Closure
                     let terminal_id = {
                         if let Ok(config) = config_state.read() {
@@ -120,7 +120,7 @@ pub fn run() {
                             "UNKNOWN".to_string()
                         }
                     };
-                    
+
                     if let Err(e) = detect_unexpected_closure(&terminal_id).await {
                         error!("⚠️ Error al verificar cierre inesperado: {e}");
                     }
@@ -233,11 +233,11 @@ pub fn run() {
                  // If user wants X -> Logout & Quit, we change logic.
                  // ASSUMPTION: User wants to track "Session End" or actual App Termination.
                  // If X hides, session persists. So we only log on "Quit" or "Logout".
-                 // BUT user said "la app no se cierra desde la x... sino desde el tray pero no capturo nada".
-                 // So the issue is specifically TRAY QUIT.
-                 
-                 // However, "Close Manual" implies X. If X only hides, then it's NOT a logout.
-                 // I will ONLY Fix the Tray Quit logging for now as requested.
+                  // BUT user said "la app no se cierra desde la x... sino desde el tray pero no capturo nada".
+                  // So the issue is specifically TRAY QUIT.
+
+                  // However, "Close Manual" implies X. If X only hides, then it's NOT a logout.
+                  // I will ONLY Fix the Tray Quit logging for now as requested.
                 window.hide().unwrap();
                 api.prevent_close();
             }
@@ -253,10 +253,10 @@ fn log_exit_event(app: &tauri::AppHandle, session: &SessionState, reason: &str) 
         let duration = session.get_duration_string();
         let ip = session.get_ip();
         let config_state = app.state::<AppConfigState>();
-        
+
         // We need to run async code in blocking context
         tauri::async_runtime::block_on(async {
-             // 1. Get Terminal Info
+            // 1. Get Terminal Info
             let (terminal_id, terminal_name) = {
                 if let Ok(config) = config_state.read() {
                     (config.terminal.id.clone(), config.terminal.nombre.clone())
@@ -273,11 +273,12 @@ fn log_exit_event(app: &tauri::AppHandle, session: &SessionState, reason: &str) 
                 user.full_name(), // Make sure full_name exists or use proper field
                 "LOGOUT".to_string(),
                 Some(duration),
-                ip, 
+                ip,
                 Some(reason.to_string()),
-            ).await;
+            )
+            .await;
         });
-        
+
         // Clear session
         session.clear();
     }
@@ -286,14 +287,17 @@ fn log_exit_event(app: &tauri::AppHandle, session: &SessionState, reason: &str) 
 /// Detects if the previous session ended unexpectedly (e.g. crash, power loss, Ctrl+C)
 async fn detect_unexpected_closure(terminal_id: &str) -> Result<(), Box<dyn std::error::Error>> {
     use crate::db::surrealdb_audit_queries::{get_last_terminal_log, insert_sys_log};
-    
+
     // 1. Get last log for this terminal
     if let Ok(Some(last_log)) = get_last_terminal_log(terminal_id).await {
         // 2. If it was a LOGIN, and it happened more than 10 seconds ago (to avoid race during fast restart)
         // or just if it was a LOGIN, it means no LOGOUT followed.
         if last_log.event_type == "LOGIN" {
-            info!("🚨 Cierre inesperado detectado para la terminal: {}. Registrando en auditoría...", terminal_id);
-            
+            info!(
+                "🚨 Cierre inesperado detectado para la terminal: {}. Registrando en auditoría...",
+                terminal_id
+            );
+
             // 3. Log the anomaly
             insert_sys_log(
                 last_log.terminal_id,
@@ -303,9 +307,10 @@ async fn detect_unexpected_closure(terminal_id: &str) -> Result<(), Box<dyn std:
                 None, // We can't easily calculate duration without knowing exact crash time
                 last_log.ip_address,
                 Some("Unexpected Closure (Crash/Force Quit detected)".to_string()),
-            ).await?;
+            )
+            .await?;
         }
     }
-    
+
     Ok(())
 }
