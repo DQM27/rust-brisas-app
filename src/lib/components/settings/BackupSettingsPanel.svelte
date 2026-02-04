@@ -72,7 +72,7 @@
 	let isCreatingPortable = $state(false);
 
 	// Permisos
-	const canUpdate = $derived($currentUser && can($currentUser, 'UPDATE_SETTINGS_BACKUP'));
+	const canUpdate = $derived($currentUser && can($currentUser, 'backup:create'));
 
 	// ==========================================
 	// COLUMNAS

@@ -24,7 +24,7 @@
 	});
 
 	// Permisos
-	const canUpdate = $derived($currentUser && can($currentUser, 'UPDATE_SETTINGS_BACKUP'));
+	const canUpdate = $derived($currentUser && can($currentUser, 'export:create'));
 
 	// Profile Management
 	let showProfileEditor = $state(false);

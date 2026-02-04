@@ -106,7 +106,7 @@
 			if (!event) return;
 			if ($activeTabId !== tabId) return;
 
-			const canCreate = $currentUser && can($currentUser, 'CREATE_USER');
+			const canCreate = $currentUser && can($currentUser, 'users:create');
 
 			switch (event.command) {
 				case 'create':
@@ -342,11 +342,11 @@
 		const user = row.getData() as UserResponse;
 		if (!$currentUser) return;
 
-		const canUpdate = can($currentUser, 'UPDATE_USER_PROFILE', user);
+		const canUpdate = can($currentUser, 'users:update', user);
 		if (canUpdate) {
 			openModal(user);
 		} else {
-			const canView = can($currentUser, 'VIEW_USER_DETAIL');
+			const canView = can($currentUser, 'users:view');
 			if (canView) {
 				openModal(user, true);
 			}
@@ -444,7 +444,7 @@
 							>
 								<RotateCcw size={14} /> Restaurar
 							</button>
-						{:else if $currentUser && can($currentUser, 'UPDATE_USER_PROFILE', selected)}
+						{:else if $currentUser && can($currentUser, 'users:update', selected)}
 							<button
 								onclick={() => openModal(selected)}
 								class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md hover:bg-amber-500/20 text-sm font-medium transition-colors"
@@ -454,7 +454,7 @@
 						{/if}
 					{/if}
 
-					{#if !showArchived && $currentUser && can($currentUser, 'DELETE_USER')}
+					{#if !showArchived && $currentUser && can($currentUser, 'users:delete')}
 						<button
 							onclick={() => handleDeleteMultiple(selectedRows)}
 							class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
@@ -479,7 +479,7 @@
 						{/if}
 					</button>
 
-					{#if !showArchived && $currentUser && can($currentUser, 'CREATE_USER')}
+					{#if !showArchived && $currentUser && can($currentUser, 'users:create')}
 						<button
 							onclick={() => openModal(null)}
 							class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"

@@ -56,7 +56,7 @@
 					focusOnOpen: true
 				});
 			},
-			permission: 'VIEW_USER_DETAIL'
+			permission: 'users:view'
 		},
 		{
 			id: 'ingresos',
@@ -70,7 +70,7 @@
 					focusOnOpen: true
 				});
 			},
-			permission: 'VIEW_ENTRY_LIST'
+			permission: 'ingresos:view'
 		},
 		{
 			id: 'ingreso-proveedores',
@@ -84,7 +84,7 @@
 					focusOnOpen: true
 				});
 			},
-			permission: 'VIEW_ENTRY_LIST'
+			permission: 'ingresos:view'
 		},
 		{
 			id: 'ingreso-visitas',
@@ -98,7 +98,7 @@
 					focusOnOpen: true
 				});
 			},
-			permission: 'VIEW_VISITOR_LIST'
+			permission: 'visitantes:view'
 		},
 		{
 			id: 'gafetes',
@@ -112,7 +112,7 @@
 					focusOnOpen: true
 				});
 			},
-			permission: 'VIEW_GAFETE_LIST'
+			permission: 'gafetes:view'
 		},
 		{
 			id: 'blacklist',
@@ -126,7 +126,7 @@
 					focusOnOpen: true
 				});
 			},
-			permission: 'VIEW_BLACKLIST'
+			permission: 'lista_negra:view'
 		},
 		{
 			id: 'logs',

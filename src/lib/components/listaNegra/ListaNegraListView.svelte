@@ -63,7 +63,7 @@
 	// Keyboard handling
 	let unsubscribeKeyboard: (() => void) | null = null;
 
-	const canManage = $derived(can($currentUser, 'MANAGE_BLACKLIST'));
+	const canManage = $derived(can($currentUser, 'lista_negra:create'));
 	const columns = $derived(getListaNegraColumns());
 
 	async function loadListaNegra() {

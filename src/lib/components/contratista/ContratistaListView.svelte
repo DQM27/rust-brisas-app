@@ -384,7 +384,7 @@
 	// Status Change
 	async function handleStatusChange(id: string, status: string) {
 		if (isUpdatingStatus) return;
-		if (!$currentUser || !can($currentUser, 'UPDATE_CONTRACTOR')) {
+		if (!$currentUser || !can($currentUser, 'contratistas:update')) {
 			toast.error('No tienes permisos para cambiar el estado.');
 			return;
 		}
@@ -488,7 +488,7 @@
 
 	// Restore
 	function handleRestore(contratista: ContratistaResponse) {
-		if (!$currentUser || !can($currentUser, 'DELETE_CONTRACTOR')) {
+		if (!$currentUser || !can($currentUser, 'contratistas:delete')) {
 			toast.error('No tienes permisos para restaurar.');
 			return;
 		}
@@ -513,7 +513,7 @@
 
 	// Delete Contractor
 	function handleDelete(contratista: ContratistaResponse) {
-		if (!$currentUser || !can($currentUser, 'DELETE_CONTRACTOR')) {
+		if (!$currentUser || !can($currentUser, 'contratistas:delete')) {
 			toast.error('No tienes permisos para eliminar.');
 			return;
 		}
@@ -538,7 +538,7 @@
 
 	// Bulk Delete
 	function handleDeleteMultiple(selection: ContratistaResponse[]) {
-		if (!$currentUser || !can($currentUser, 'DELETE_CONTRACTOR')) {
+		if (!$currentUser || !can($currentUser, 'contratistas:delete')) {
 			toast.error('No tienes permisos para eliminar.');
 			return;
 		}
@@ -676,7 +676,7 @@
 			const current = get(activeTabId);
 			if (current !== tabId) return;
 
-			const canCreate = $currentUser && can($currentUser, 'CREATE_CONTRACTOR');
+			const canCreate = $currentUser && can($currentUser, 'contratistas:create');
 
 			switch (event.command) {
 				case 'create':
@@ -853,7 +853,7 @@
 							{/if}
 						</button>
 
-						{#if !showArchived && $currentUser && can($currentUser, 'CREATE_CONTRACTOR')}
+						{#if !showArchived && $currentUser && can($currentUser, 'contratistas:create')}
 							<button
 								class="flex items-center gap-2 px-3 py-1.5
                                        bg-blue-600/10 hover:bg-blue-600/20

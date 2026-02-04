@@ -27,7 +27,7 @@
 	import { currentUser } from '$lib/stores/auth';
 
 	// Permisos
-	const canUpdate = $derived($currentUser && can($currentUser, 'UPDATE_SETTINGS_VISUAL'));
+	const canUpdate = $derived($currentUser && can($currentUser, 'settings_visual:update'));
 
 	let showAdvancedCustomization = $state(false);
 	let showWeatherCustomization = $state(false);

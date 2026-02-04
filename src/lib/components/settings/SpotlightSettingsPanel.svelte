@@ -6,7 +6,7 @@
 	import { can } from '$lib/logic/permissions';
 
 	// Permisos
-	const canUpdate = $derived($currentUser && can($currentUser, 'UPDATE_SETTINGS_GENERAL'));
+	const canUpdate = $derived($currentUser && can($currentUser, 'settings_general:update'));
 
 	// ==========================================================================
 	// Snippets reutilizables (estilo GeneralSettingsPanel)

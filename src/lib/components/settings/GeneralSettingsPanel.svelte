@@ -10,7 +10,7 @@
 	import { currentUser } from '$lib/stores/auth';
 
 	// Permisos
-	const canUpdate = $derived($currentUser && can($currentUser, 'UPDATE_SETTINGS_GENERAL'));
+	const canUpdate = $derived($currentUser && can($currentUser, 'settings_general:update'));
 
 	// Estado de audio
 	let alertSound = $state('Hand');

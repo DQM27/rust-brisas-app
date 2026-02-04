@@ -26,7 +26,7 @@ import {
 	TAB_ICON
 } from '$lib/logic/spotlight/spotlightDefinitions';
 import { User, Building2, ShieldCheck, Mail, IdCard, Search } from 'lucide-svelte';
-import type { Action } from '$lib/logic/permissions';
+import type { Permission } from '$lib/logic/permissions';
 
 // Re-export types for convenience
 export type { SpotlightItem, SpotlightItemDefinition, SpotlightGroups, SpotlightCategory };
@@ -42,7 +42,7 @@ export function hasPermission(definition: SpotlightItemDefinition): boolean {
 	const user = get(currentUser);
 	if (!user) return false;
 
-	if (definition.permission && !can(user, definition.permission as Action)) {
+	if (definition.permission && !can(user, definition.permission as Permission)) {
 		return false;
 	}
 

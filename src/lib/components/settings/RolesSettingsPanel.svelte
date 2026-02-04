@@ -76,15 +76,15 @@
 	}
 
 	function canCreate() {
-		return $currentUser && can($currentUser, 'CREATE_ROLE');
+		return $currentUser && can($currentUser, 'roles:create');
 	}
 
 	function canUpdate() {
-		return $currentUser && can($currentUser, 'UPDATE_ROLE');
+		return $currentUser && can($currentUser, 'roles:update');
 	}
 
 	function canDelete() {
-		return $currentUser && can($currentUser, 'DELETE_ROLE');
+		return $currentUser && can($currentUser, 'roles:delete');
 	}
 
 	function startEdit(role: RoleResponse) {

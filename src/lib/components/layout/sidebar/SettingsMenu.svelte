@@ -61,7 +61,7 @@
 				Pantalla de Bienvenida
 			</button>
 
-			{#if currentUser && can(currentUser, 'VIEW_SETTINGS_GENERAL')}
+			{#if currentUser && can(currentUser, 'settings_general:view')}
 				<button
 					class="settings-menu-item"
 					onclick={() => handleAction(() => openView('general-settings', 'Ajustes Generales'))}
@@ -69,7 +69,7 @@
 					Ajustes Generales
 				</button>
 			{/if}
-			{#if currentUser && can(currentUser, 'VIEW_SETTINGS_VISUAL')}
+			{#if currentUser && can(currentUser, 'settings_visual:view')}
 				<button
 					class="settings-menu-item"
 					onclick={() => handleAction(() => openView('visual-settings', 'Ajustes Gráficos'))}
@@ -78,7 +78,7 @@
 				</button>
 			{/if}
 
-			{#if currentUser && can(currentUser, 'VIEW_SETTINGS_GENERAL')}
+			{#if currentUser && can(currentUser, 'settings_general:view')}
 				<button
 					class="settings-menu-item"
 					onclick={() => handleAction(() => openView('spotlight-settings', 'Ajustes de Spotlight'))}
@@ -87,7 +87,7 @@
 				</button>
 			{/if}
 
-			{#if currentUser && can(currentUser, 'VIEW_SETTINGS_SESSIONS')}
+			{#if currentUser && can(currentUser, 'settings_sessions:view')}
 				<button
 					class="settings-menu-item"
 					onclick={() => handleAction(() => openView('session-settings', 'Gestión de Sesión'))}
@@ -96,7 +96,7 @@
 				</button>
 			{/if}
 
-			{#if currentUser && can(currentUser, 'VIEW_ROLE_LIST')}
+			{#if currentUser && can(currentUser, 'roles:view')}
 				<button
 					class="settings-menu-item"
 					onclick={() => handleAction(() => openView('roles-settings', 'Roles y Permisos'))}
@@ -114,7 +114,7 @@
 			</button>
 
 			<!-- Grupo 2: Datos -->
-			{#if currentUser && can(currentUser, 'VIEW_SETTINGS_BACKUP')}
+			{#if currentUser && can(currentUser, 'backup:view')}
 				<button
 					class="settings-menu-item"
 					onclick={() =>
@@ -123,7 +123,7 @@
 					Exportación
 				</button>
 			{/if}
-			{#if currentUser && can(currentUser, 'VIEW_SETTINGS_BACKUP')}
+			{#if currentUser && can(currentUser, 'backup:view')}
 				<button
 					class="settings-menu-item"
 					onclick={() => handleAction(() => openView('backup-settings', 'Copias de Seguridad'))}

@@ -5,7 +5,7 @@
 	import { currentUser } from '$lib/stores/auth';
 
 	// Permisos
-	const canUpdate = $derived($currentUser && can($currentUser, 'UPDATE_SETTINGS_SESSIONS'));
+	const canUpdate = $derived($currentUser && can($currentUser, 'settings_sessions:update'));
 
 	// Local state for editing
 	let screensaverMinutes = $state($sessionSettings.screensaverTimeoutMinutes);

@@ -47,7 +47,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'module',
 		subCategory: 'link',
 		keywords: ['user', 'usuarios', 'lista', 'administrar'],
-		permission: 'VIEW_USER_DETAIL',
+		permission: 'users:view',
 		shortcut: 'Shift+U'
 	},
 	{
@@ -58,7 +58,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'module',
 		subCategory: 'link',
 		keywords: ['ingreso', 'contratista', 'entrada', 'acceso'],
-		permission: 'VIEW_ENTRY_LIST',
+		permission: 'ingresos:view',
 		shortcut: 'Shift+I'
 	},
 	{
@@ -69,7 +69,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'module',
 		subCategory: 'link',
 		keywords: ['lista', 'contratista', 'maestro', 'administrar'],
-		permission: 'VIEW_ENTRY_LIST',
+		permission: 'contratistas:view',
 		shortcut: 'Shift+C'
 	},
 	{
@@ -80,7 +80,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'module',
 		subCategory: 'link',
 		keywords: ['proveedor', 'ingreso', 'suministro', 'entrada'],
-		permission: 'VIEW_ENTRY_LIST'
+		permission: 'ingresos:view'
 	},
 	{
 		id: 'proveedor-list',
@@ -90,7 +90,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'module',
 		subCategory: 'link',
 		keywords: ['lista', 'proveedor', 'maestro', 'administrar'],
-		permission: 'VIEW_ENTRY_LIST'
+		permission: 'proveedores:view'
 	},
 	{
 		id: 'visitas-list',
@@ -100,7 +100,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'module',
 		subCategory: 'link',
 		keywords: ['visita', 'visitante', 'invitado', 'entrada'],
-		permission: 'VIEW_VISITOR_LIST'
+		permission: 'visitantes:view'
 	},
 	{
 		id: 'visitante-list',
@@ -110,7 +110,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'module',
 		subCategory: 'link',
 		keywords: ['lista', 'visitante', 'maestro', 'administrar'],
-		permission: 'VIEW_VISITOR_LIST'
+		permission: 'visitantes:view'
 	},
 	{
 		id: 'gafete-list',
@@ -120,7 +120,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'module',
 		subCategory: 'link',
 		keywords: ['gafete', 'identificacion', 'tarjeta', 'badge'],
-		permission: 'VIEW_GAFETE_LIST'
+		permission: 'gafetes:view'
 	},
 	{
 		id: 'lista-negra-list',
@@ -130,7 +130,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'module',
 		subCategory: 'link',
 		keywords: ['lista negra', 'blacklist', 'bloqueado', 'restringido'],
-		permission: 'VIEW_BLACKLIST'
+		permission: 'lista_negra:view'
 	},
 	{
 		id: 'alerta-gafete-list',
@@ -140,7 +140,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'module',
 		subCategory: 'link',
 		keywords: ['alerta', 'incidencia', 'resolucion', 'gafete', 'seguridad', 'pendiente'],
-		permission: 'VIEW_GAFETE_LIST',
+		permission: 'gafetes:view',
 		shortcut: 'Alt+A'
 	},
 	{
@@ -169,7 +169,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'transaction',
 		keywords: ['nuevo', 'crear', 'contratista', 'ingreso', 'registrar'],
-		permission: 'CREATE_ENTRY',
+		permission: 'ingresos:create',
 		shortcut: 'Ctrl+N'
 	},
 	{
@@ -180,7 +180,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'transaction',
 		keywords: ['nuevo', 'crear', 'proveedor', 'ingreso', 'registrar'],
-		permission: 'CREATE_ENTRY'
+		permission: 'ingresos:create'
 	},
 	{
 		id: 'create-visita',
@@ -190,7 +190,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'transaction',
 		keywords: ['nuevo', 'crear', 'visita', 'visitante', 'ingreso', 'registrar'],
-		permission: 'CREATE_VISITOR'
+		permission: 'visitantes:create'
 	},
 	// --- MAESTROS (CREAR) ---
 	{
@@ -201,7 +201,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'master',
 		keywords: ['crear', 'maestro', 'catálogo', 'contratista'],
-		permission: 'CREATE_ENTRY'
+		permission: 'contratistas:create'
 	},
 	{
 		id: 'master-proveedor',
@@ -211,7 +211,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'master',
 		keywords: ['crear', 'maestro', 'catálogo', 'proveedor'],
-		permission: 'CREATE_ENTRY'
+		permission: 'proveedores:create'
 	},
 	{
 		id: 'master-visitante',
@@ -221,7 +221,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'master',
 		keywords: ['crear', 'maestro', 'catálogo', 'visitante', 'visita'],
-		permission: 'CREATE_VISITOR'
+		permission: 'visitantes:create'
 	},
 	{
 		id: 'create-user',
@@ -231,7 +231,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'master',
 		keywords: ['nuevo', 'crear', 'usuario', 'user', 'registrar', 'empleado'],
-		permission: 'CREATE_USER'
+		permission: 'users:create'
 	},
 	{
 		id: 'create-blacklist',
@@ -241,7 +241,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'master',
 		keywords: ['bloquear', 'banear', 'lista negra', 'denegar', 'restringir'],
-		permission: 'MANAGE_BLACKLIST'
+		permission: 'lista_negra:create'
 	},
 	{
 		id: 'create-gafete',
@@ -251,7 +251,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'master',
 		keywords: ['nuevo', 'crear', 'gafete', 'carnet', 'tarjeta', 'inventario'],
-		permission: 'CREATE_GAFETE'
+		permission: 'gafetes:create'
 	},
 	{
 		id: 'create-gafete-batch',
@@ -261,7 +261,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'master',
 		keywords: ['lote', 'rango', 'generar', 'masivo', 'gafetes'],
-		permission: 'CREATE_GAFETE'
+		permission: 'gafetes:create'
 	},
 	// --- CONFIGURACIÓN ---
 	{
@@ -272,7 +272,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'settings',
 		keywords: ['configuracion', 'ajustes', 'general', 'sistema'],
-		permission: 'VIEW_SETTINGS_GENERAL'
+		permission: 'settings_general:view'
 	},
 	{
 		id: 'settings-visual',
@@ -282,7 +282,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'settings',
 		keywords: ['configuracion', 'ajustes', 'graficos', 'visual', 'tema', 'modo oscuro'],
-		permission: 'VIEW_SETTINGS_VISUAL'
+		permission: 'settings_visual:view'
 	},
 	{
 		id: 'settings-session',
@@ -292,7 +292,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'settings',
 		keywords: ['configuracion', 'ajustes', 'sesion', 'seguridad', 'password'],
-		permission: 'VIEW_SETTINGS_SESSIONS'
+		permission: 'settings_sessions:view'
 	},
 	{
 		id: 'settings-roles',
@@ -302,7 +302,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'settings',
 		keywords: ['configuracion', 'roles', 'permisos', 'usuarios', 'acceso'],
-		permission: 'VIEW_ROLE_LIST'
+		permission: 'roles:view'
 	},
 	{
 		id: 'settings-export',
@@ -312,7 +312,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'settings',
 		keywords: ['configuracion', 'exportacion', 'reportes', 'excel', 'pdf'],
-		permission: 'VIEW_SETTINGS_BACKUP'
+		permission: 'backup:view'
 	},
 	{
 		id: 'settings-backup',
@@ -322,7 +322,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'settings',
 		keywords: ['configuracion', 'backup', 'respaldo', 'copia', 'seguridad'],
-		permission: 'VIEW_SETTINGS_BACKUP'
+		permission: 'backup:view'
 	},
 	{
 		id: 'settings-spotlight',
@@ -332,7 +332,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'settings',
 		keywords: ['configuracion', 'ajustes', 'spotlight', 'buscador', 'omnibox'],
-		permission: 'VIEW_SETTINGS_GENERAL'
+		permission: 'settings_general:view'
 	},
 	{
 		id: 'settings-shortcuts',
@@ -351,7 +351,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		category: 'action',
 		subCategory: 'link',
 		keywords: ['papelera', 'trash', 'eliminado', 'restaurar'],
-		permission: 'VIEW_TRASH'
+		permission: 'trash:view'
 	},
 	{
 		id: 'action-reindex',
