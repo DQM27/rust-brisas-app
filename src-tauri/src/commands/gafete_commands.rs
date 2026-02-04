@@ -65,11 +65,10 @@ pub async fn get_all_gafetes(
     for gafete in &list {
         // Contar por estado (usando campo 'status')
         match gafete.status.to_lowercase().as_str() {
-            "disponible" => disponibles += 1,
             "en_uso" | "enuso" | "en uso" => en_uso += 1,
             "danado" | "dañado" => danados += 1,
             "extraviado" | "perdido" => extraviados += 1,
-            _ => disponibles += 1, // Default a disponible
+            _ => disponibles += 1, // Default and "disponible"
         }
 
         // Contar por tipo (usando enum TipoGafete)
