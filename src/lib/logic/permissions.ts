@@ -45,12 +45,6 @@ export type Action =
 	| 'UPDATE_VEHICLE'
 	| 'DELETE_VEHICLE'
 
-	// Appointment (Citas) Module
-	| 'VIEW_APPOINTMENT_LIST'
-	| 'CREATE_APPOINTMENT'
-	| 'UPDATE_APPOINTMENT'
-	| 'DELETE_APPOINTMENT'
-
 	// Entry (Ingresos) Module
 	| 'VIEW_ENTRY_LIST'
 	| 'CREATE_ENTRY'
@@ -181,12 +175,6 @@ export function can(
 			CREATE_VEHICLE: 'vehiculos:create',
 			UPDATE_VEHICLE: 'vehiculos:update',
 			DELETE_VEHICLE: 'vehiculos:delete',
-
-			// Appointment (Citas)
-			VIEW_APPOINTMENT_LIST: 'citas:read',
-			CREATE_APPOINTMENT: 'citas:create',
-			UPDATE_APPOINTMENT: 'citas:update',
-			DELETE_APPOINTMENT: 'citas:delete',
 
 			// Entry (Ingresos)
 			VIEW_ENTRY_LIST: 'ingresos:read',

@@ -216,7 +216,6 @@
 		proveedores: 'Proveedores',
 		visitantes: 'Visitantes',
 		ingresos: 'Ingresos',
-		citas: 'Citas',
 		settings_general: 'Configuración General',
 		settings_visual: 'Apariencia',
 		settings_security: 'Seguridad',
