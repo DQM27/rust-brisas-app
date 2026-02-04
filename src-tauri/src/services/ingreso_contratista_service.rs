@@ -414,7 +414,7 @@ where
                 crate::domain::ingreso_contratista::evaluar_estado_permanencia(minutos);
             let estado_str = match estado_permanencia {
                 crate::domain::ingreso_contratista::EstadoPermanencia::Normal => "Normal",
-                crate::domain::ingreso_contratista::EstadoPermanencia::Alerta => "Alerta",
+                crate::domain::ingreso_contratista::EstadoPermanencia::AlertaTemprana => "Alerta",
                 crate::domain::ingreso_contratista::EstadoPermanencia::TiempoExcedido => {
                     "TiempoExcedido"
                 }
