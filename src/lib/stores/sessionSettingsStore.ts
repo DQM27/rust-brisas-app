@@ -59,7 +59,7 @@ function loadFromLocalStorage(): SessionSettings {
 
 async function loadFromTauriStore(): Promise<SessionSettings> {
 	try {
-		const { getSetting } = await import('$lib/services/storeService');
+		const { getSetting } = await import('../api/store');
 		const stored = await getSetting<SessionSettings>(STORAGE_KEY, DEFAULT_SETTINGS);
 		return { ...DEFAULT_SETTINGS, ...stored };
 	} catch {
@@ -71,7 +71,7 @@ async function saveToStorage(settings: SessionSettings): Promise<void> {
 	if (!browser) return;
 	localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 	try {
-		const { setSetting } = await import('$lib/services/storeService');
+		const { setSetting } = await import('../api/store');
 		await setSetting(STORAGE_KEY, settings);
 	} catch {
 		// localStorage already saved

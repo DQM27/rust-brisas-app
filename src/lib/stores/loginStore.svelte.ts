@@ -106,7 +106,7 @@ class LoginStore {
 		this._initialized = true;
 
 		try {
-			const { getSetting } = await import('$lib/services/storeService');
+			const { getSetting } = await import('../api/store');
 			let stored = await getSetting<string>(STORAGE_KEY, '');
 			const passChecked = await getSetting<boolean>(PASSWORD_CHECKED_KEY, false);
 
@@ -139,7 +139,7 @@ class LoginStore {
 
 		// Async save to Tauri Store
 		try {
-			const { setSetting } = await import('$lib/services/storeService');
+			const { setSetting } = await import('../api/store');
 			await setSetting(STORAGE_KEY, email);
 		} catch {
 			// localStorage already saved
@@ -152,7 +152,7 @@ class LoginStore {
 		localStorage.removeItem(STORAGE_KEY);
 
 		try {
-			const { deleteSetting } = await import('$lib/services/storeService');
+			const { deleteSetting } = await import('../api/store');
 			await deleteSetting(STORAGE_KEY);
 		} catch {
 			// localStorage already cleared
@@ -187,7 +187,7 @@ class LoginStore {
 	private async savePersistenceFlags(email: string, passwordChecked: boolean): Promise<void> {
 		if (!browser) return;
 		try {
-			const { setSetting } = await import('$lib/services/storeService');
+			const { setSetting } = await import('../api/store');
 			await setSetting(STORAGE_KEY, email);
 			await setSetting(PASSWORD_CHECKED_KEY, passwordChecked);
 		} catch (e) {

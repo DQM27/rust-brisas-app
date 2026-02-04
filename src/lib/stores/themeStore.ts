@@ -21,7 +21,7 @@ const theme = writable<Theme>(getInitialTheme());
 async function loadFromTauriStore(): Promise<void> {
 	if (!browser) return;
 	try {
-		const { getSetting } = await import('$lib/services/storeService');
+		const { getSetting } = await import('../api/store');
 		const storedTheme = await getSetting<Theme>('theme', 'dark');
 		theme.set(storedTheme);
 		localStorage.setItem('theme', storedTheme); // Keep localStorage in sync
@@ -47,7 +47,7 @@ async function applyTheme(newTheme: Theme): Promise<void> {
 
 	// Persist to Tauri Store (async, for cross-session)
 	try {
-		const { setSetting } = await import('$lib/services/storeService');
+		const { setSetting } = await import('../api/store');
 		await setSetting('theme', newTheme);
 	} catch {
 		// Fallback: localStorage already saved

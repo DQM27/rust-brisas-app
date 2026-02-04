@@ -76,7 +76,7 @@ function loadFromLocalStorage(): ParticleSettings {
 
 async function loadFromTauriStore(): Promise<ParticleSettings> {
 	try {
-		const { getSetting } = await import('$lib/services/storeService');
+		const { getSetting } = await import('../api/store');
 		const stored = await getSetting<ParticleSettings>(STORAGE_KEY, DEFAULT_PARTICLE_SETTINGS);
 		return { ...DEFAULT_PARTICLE_SETTINGS, ...stored };
 	} catch {
@@ -88,7 +88,7 @@ async function saveToStorage(settings: ParticleSettings): Promise<void> {
 	if (!browser) return;
 	localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 	try {
-		const { setSetting } = await import('$lib/services/storeService');
+		const { setSetting } = await import('../api/store');
 		await setSetting(STORAGE_KEY, settings);
 	} catch {
 		// localStorage already saved

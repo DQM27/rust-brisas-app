@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { ingreso as ingresoApi } from '$lib/api/ingreso';
 import type { TipoIngreso, ValidacionIngresoResult, FinalizarIngresoForm } from './types';
 import type { ValidacionIngresoResponse, IngresoResponse } from '$lib/types/ingreso';
 import type { VehiculoResponse } from '$lib/types/vehiculo';
@@ -26,13 +26,13 @@ export async function validarIngreso(
 		let response: ValidacionIngresoResponse;
 
 		if (tipo === 'contratista') {
-			response = await invoke('validate_ingreso_contratista', { contratistaId: id });
+			response = await ingresoApi.validarIngresoContratista(id);
 			return mapContratistaResponse(response);
 		} else if (tipo === 'proveedor') {
-			response = await invoke('validar_ingreso_proveedor', { proveedorId: id });
+			response = await ingresoApi.validarIngresoProveedor(id);
 			return mapProveedorResponse(response);
 		} else if (tipo === 'visita') {
-			response = await invoke('validar_ingreso_visita', { visitanteId: id });
+			response = await ingresoApi.validarIngresoVisita(id);
 			return mapVisitaResponse(response);
 		} else {
 			throw new Error(`Tipo de ingreso no soportado: ${tipo}`);
@@ -182,8 +182,8 @@ export async function registrarEntrada(
 
 export async function fetchContratistasAbiertos(): Promise<ServiceResult<IngresoResponse[]>> {
 	try {
-		const data = await invoke('get_ingresos_contratistas_activos');
-		return { ok: true, data: data as IngresoResponse[] };
+		const data = await ingresoApi.getContratistasActivos();
+		return { ok: true, data: data };
 	} catch (e: unknown) {
 		const msg = e instanceof Error ? e.message : String(e);
 		return { ok: false, error: msg || 'Error cargando contratistas activos' };
@@ -237,53 +237,48 @@ export async function crearIngreso(
 			// Valores válidos: "1", "2", "S/G", "", null (todos se convierten a i32)
 			const gafeteNumero = formData.gafete || null;
 
-			const payload = {
-				input: {
-					contratistaId: candidateId,
-					gafeteNumero: gafeteNumero,
-					placaVehiculo: placaVehiculo,
-					tipoAutorizacion: formData.tipoAutorizacion || 'praind',
-					modoIngreso: formData.modoIngreso || 'caminando',
-					observaciones: formData.observaciones || null
-				},
-				usuarioId: usuarioId
-			};
-
-			return await invoke('create_ingreso_contratista', payload);
+			return await ingresoApi.crearIngresoContratista({
+				contratistaId: candidateId,
+				vehiculoId: formData.vehiculoId || null,
+				gafeteNumero: gafeteNumero,
+				tipoAutorizacion: formData.tipoAutorizacion || 'praind',
+				modoIngreso: formData.modoIngreso || 'caminando',
+				observaciones: formData.observaciones || null,
+				usuarioIngresoId: usuarioId
+			});
 		} else if (tipo === 'proveedor') {
-			return await invoke('crear_ingreso_proveedor_v2', {
-				input: {
-					proveedorId: candidateId,
-					nombre: extraData.nombre,
-					apellido: extraData.apellido,
-					cedula: extraData.cedula,
-					areaVisitada: formData.areaVisitada || extraData.areaVisitada || '',
-					motivo: formData.motivo || extraData.motivo || 'Proveedor',
-					modoIngreso: formData.modoIngreso || 'caminando',
-					placaVehiculo: formData.vehiculoId, // For proveedor, usually passed directly
-					gafeteNumero: formData.gafete,
-					observaciones: formData.observaciones || null
-				},
-				usuarioId: usuarioId
+			return await ingresoApi.crearIngresoProveedor({
+				cedula: extraData.cedula,
+				nombre: extraData.nombre,
+				apellido: extraData.apellido || '',
+				empresaId: extraData.empresaId || '',
+				areaVisitada: formData.areaVisitada || extraData.areaVisitada || '',
+				motivo: formData.motivo || extraData.motivo || 'Proveedor',
+				tipoAutorizacion: formData.tipoAutorizacion || 'praind',
+				modoIngreso: formData.modoIngreso || 'caminando',
+				vehiculoPlaca: formData.vehiculoId || null,
+				gafeteNumero: formData.gafete || null,
+				observaciones: formData.observaciones || null,
+				usuarioIngresoId: usuarioId
 			});
 		} else if (tipo === 'visita') {
 			if (!extraData || !extraData.cedula) {
 				throw new Error('Faltan datos requeridos para ingreso de visita (cedula, nombre, etc.)');
 			}
 
-			return await invoke('crear_ingreso_visita', {
-				input: {
-					cedula: extraData.cedula,
-					nombre: extraData.nombre,
-					apellido: extraData.apellido,
-					anfitrion: extraData.anfitrion,
-					areaVisitada: extraData.areaVisitada,
-					motivo: extraData.motivo || 'Visita',
-					modoIngreso: formData.modoIngreso || 'caminando',
-					placaVehiculo: null, // Visitas usually don't have vehicles in this form yet
-					gafeteNumero: formData.gafete ? parseInt(formData.gafete) : null,
-					observaciones: formData.observaciones || null
-				}
+			return await ingresoApi.crearIngresoVisita({
+				cedula: extraData.cedula,
+				nombre: extraData.nombre,
+				apellido: extraData.apellido,
+				anfitrion: extraData.anfitrion,
+				areaVisitada: extraData.areaVisitada,
+				motivoVisita: extraData.motivo || 'Visita',
+				tipoAutorizacion: formData.tipoAutorizacion || 'praind',
+				modoIngreso: formData.modoIngreso || 'caminando',
+				vehiculoPlaca: null,
+				gafeteNumero: formData.gafete || null,
+				observaciones: formData.observaciones || null,
+				usuarioIngresoId: usuarioId
 			});
 		} else {
 			throw new Error(`Tipo de ingreso no soportado: ${tipo}`);
@@ -310,15 +305,13 @@ export async function registrarSalida(params: {
 	usuarioSalidaId: string;
 }): Promise<ServiceResult<IngresoResponse>> {
 	try {
-		const res = await invoke('registrar_salida', {
-			input: {
-				ingreso_id: params.ingresoId,
-				devolvio_gafete: params.devolvioGafete,
-				observaciones: params.observacionesSalida,
-				usuario_salida_id: params.usuarioSalidaId
-			}
+		const res = await ingresoApi.registrarSalida({
+			ingresoId: params.ingresoId,
+			devolvioGafete: params.devolvioGafete,
+			observacionesSalida: params.observacionesSalida,
+			usuarioSalidaId: params.usuarioSalidaId
 		});
-		return { ok: true, data: res as IngresoResponse };
+		return { ok: true, data: res };
 	} catch (e: unknown) {
 		const msg = e instanceof Error ? e.message : String(e);
 		return { ok: false, error: msg || 'Error al registrar salida' };
@@ -333,11 +326,8 @@ export async function fetchSalidasEnRango(
 	endDate: string
 ): Promise<ServiceResult<IngresoResponse[]>> {
 	try {
-		const data = await invoke('get_ingresos_salidas_rango', {
-			start_date: startDate,
-			end_date: endDate
-		});
-		return { ok: true, data: data as IngresoResponse[] };
+		const data = await ingresoApi.getSalidasEnRango(startDate, endDate);
+		return { ok: true, data: data };
 	} catch (e: unknown) {
 		const msg = e instanceof Error ? e.message : String(e);
 		return { ok: false, error: msg || 'Error cargando historial de salidas' };
@@ -411,28 +401,28 @@ function mapContratistaResponse(res: ValidacionIngresoResponse): ValidacionIngre
 		contratista: res.contratista,
 		persona: res.contratista
 			? {
-					id: res.contratista.id,
-					cedula: res.contratista.cedula,
-					nombre: res.contratista.nombre,
-					apellido: res.contratista.apellido,
-					nombreCompleto: `${res.contratista.nombre} ${res.contratista.apellido}`,
-					empresa: res.contratista.empresaNombre,
-					empresaId: res.contratista.empresaId || undefined,
-					estado: res.contratista.estado,
-					vehiculos: res.contratista.vehiculos || [],
-					praindVigente: praindVigente
-				}
+				id: res.contratista.id,
+				cedula: res.contratista.cedula,
+				nombre: res.contratista.nombre,
+				apellido: res.contratista.apellido,
+				nombreCompleto: `${res.contratista.nombre} ${res.contratista.apellido}`,
+				empresa: res.contratista.empresaNombre,
+				empresaId: res.contratista.empresaId || undefined,
+				estado: res.contratista.estado,
+				vehiculos: res.contratista.vehiculos || [],
+				praindVigente: praindVigente
+			}
 			: res.ingresoAbierto
 				? {
-						id: res.ingresoAbierto.contratistaId || '',
-						cedula: res.ingresoAbierto.cedula,
-						nombre: res.ingresoAbierto.nombre,
-						apellido: res.ingresoAbierto.apellido,
-						nombreCompleto: res.ingresoAbierto.nombreCompleto,
-						empresa: res.ingresoAbierto.empresaNombre,
-						vehiculos: [],
-						praindVigente: res.ingresoAbierto.praindVigenteAlIngreso ?? false
-					}
+					id: res.ingresoAbierto.contratistaId || '',
+					cedula: res.ingresoAbierto.cedula,
+					nombre: res.ingresoAbierto.nombre,
+					apellido: res.ingresoAbierto.apellido,
+					nombreCompleto: res.ingresoAbierto.nombreCompleto,
+					empresa: res.ingresoAbierto.empresaNombre,
+					vehiculos: [],
+					praindVigente: res.ingresoAbierto.praindVigenteAlIngreso ?? false
+				}
 				: undefined
 	};
 }
@@ -448,14 +438,14 @@ function mapProveedorResponse(res: ValidacionIngresoResponse): ValidacionIngreso
 		proveedor: res.proveedor,
 		persona: res.proveedor
 			? {
-					id: res.proveedor.id,
-					cedula: res.proveedor.cedula,
-					nombre: res.proveedor.nombre,
-					apellido: res.proveedor.apellido || '',
-					nombreCompleto: `${res.proveedor.nombre} ${res.proveedor.apellido || ''}`,
-					empresa: res.proveedor.empresaNombre,
-					vehiculos: []
-				}
+				id: res.proveedor.id,
+				cedula: res.proveedor.cedula,
+				nombre: res.proveedor.nombre,
+				apellido: res.proveedor.apellido || '',
+				nombreCompleto: `${res.proveedor.nombre} ${res.proveedor.apellido || ''}`,
+				empresa: res.proveedor.empresaNombre,
+				vehiculos: []
+			}
 			: undefined
 	};
 }
@@ -471,14 +461,14 @@ function mapVisitaResponse(res: ValidacionIngresoResponse): ValidacionIngresoRes
 		visitante: res.visitante,
 		persona: res.visitante
 			? {
-					id: res.visitante.id,
-					cedula: res.visitante.cedula,
-					nombre: res.visitante.nombre,
-					apellido: res.visitante.apellido,
-					nombreCompleto: `${res.visitante.nombre} ${res.visitante.apellido}`,
-					empresa: res.visitante.empresaNombre,
-					vehiculos: []
-				}
+				id: res.visitante.id,
+				cedula: res.visitante.cedula,
+				nombre: res.visitante.nombre,
+				apellido: res.visitante.apellido,
+				nombreCompleto: `${res.visitante.nombre} ${res.visitante.apellido}`,
+				empresa: res.visitante.empresaNombre,
+				vehiculos: []
+			}
 			: undefined
 	};
 }

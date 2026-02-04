@@ -27,11 +27,22 @@ export const ingreso = {
 	/**
 	 * Validar si un contratista puede ingresar
 	 */
-	/**
-	 * Validar si un contratista puede ingresar (Sincronizado con backend unificado)
-	 */
 	validarIngresoContratista: async (contratistaId: string): Promise<ValidacionIngresoResponse> => {
 		return await invoke('validate_ingreso_contratista', { contratistaId });
+	},
+
+	/**
+	 * Validar si un proveedor puede ingresar
+	 */
+	validarIngresoProveedor: async (proveedorId: string): Promise<ValidacionIngresoResponse> => {
+		return await invoke('validar_ingreso_proveedor', { proveedorId });
+	},
+
+	/**
+	 * Validar si una visita puede ingresar
+	 */
+	validarIngresoVisita: async (visitanteId: string): Promise<ValidacionIngresoResponse> => {
+		return await invoke('validar_ingreso_visita', { visitanteId });
 	},
 
 	/**
@@ -77,9 +88,19 @@ export const ingreso = {
 	},
 
 	/**
-	 * Registrar salida (Contratistas)
+	 * Registrar salida (Genérico)
 	 */
 	registrarSalida: async (input: RegistrarSalidaInput): Promise<IngresoResponse> => {
+		const validated = RegistrarSalidaSchema.parse(input);
+		return await invoke('registrar_salida', {
+			input: validated
+		});
+	},
+
+	/**
+	 * Registrar salida (Específico Contratistas con auditoría)
+	 */
+	registrarSalidaContratista: async (input: RegistrarSalidaInput): Promise<IngresoResponse> => {
 		const validated = RegistrarSalidaSchema.parse(input);
 		return await invoke('register_exit_contratista', {
 			input: validated,
@@ -113,13 +134,20 @@ export const ingreso = {
 	},
 
 	/**
-	 * Obtener salidas en un rango de fechas
+	 * Obtener salidas en un rango de fechas (Historial)
 	 */
 	getSalidasEnRango: async (fechaInicio: string, fechaFin: string): Promise<IngresoResponse[]> => {
-		return await invoke('get_salidas_en_rango', {
-			fechaInicio,
-			fechaFin
+		return await invoke('get_ingresos_salidas_rango', {
+			start_date: fechaInicio,
+			end_date: fechaFin
 		});
+	},
+
+	/**
+	 * Obtener contratistas activos (con ingreso abierto)
+	 */
+	getContratistasActivos: async (): Promise<IngresoResponse[]> => {
+		return await invoke('get_ingresos_contratistas_activos');
 	},
 
 	// ...

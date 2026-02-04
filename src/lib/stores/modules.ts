@@ -1,14 +1,7 @@
 import { writable } from 'svelte/store';
-import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'svelte-5-french-toast';
-
-export type ModuleStatusType = 'active' | 'development' | 'maintenance' | 'hidden';
-
-export interface ModuleStatus {
-	key: string;
-	name: string;
-	status: ModuleStatusType;
-}
+import { modulesApi } from '$lib/api/modules';
+import type { ModuleStatus, ModuleStatusType } from '$lib/types/modules';
 
 // Store principal: Mapa de key -> ModuleStatus
 function createModulesStore() {
@@ -20,7 +13,7 @@ function createModulesStore() {
 		// Cargar todos los módulos desde el backend
 		load: async () => {
 			try {
-				const modules = await invoke<ModuleStatus[]>('get_modules_status');
+				const modules = await modulesApi.fetchAll();
 				const map: Record<string, ModuleStatus> = {};
 				modules.forEach((m) => {
 					map[m.key] = m;
@@ -35,7 +28,7 @@ function createModulesStore() {
 		// Actualizar estado (Requiere permisos en Backend)
 		updateStatus: async (key: string, status: ModuleStatusType) => {
 			try {
-				await invoke('update_module_status', { key, status });
+				await modulesApi.updateStatus(key, status);
 
 				// Actualización optimista
 				update((n) => {

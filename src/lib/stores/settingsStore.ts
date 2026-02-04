@@ -71,7 +71,7 @@ function loadFromLocalStorage(): GeneralSettings {
 
 async function loadFromTauriStore(): Promise<GeneralSettings> {
 	try {
-		const { getSetting } = await import('$lib/services/storeService');
+		const { getSetting } = await import('../api/store');
 		const stored = await getSetting<GeneralSettings>(STORAGE_KEY, DEFAULT_SETTINGS);
 		return { ...DEFAULT_SETTINGS, ...stored };
 	} catch {
@@ -87,7 +87,7 @@ async function saveToStorage(settings: GeneralSettings): Promise<void> {
 
 	// Async save to Tauri Store
 	try {
-		const { setSetting } = await import('$lib/services/storeService');
+		const { setSetting } = await import('../api/store');
 		await setSetting(STORAGE_KEY, settings);
 	} catch {
 		// localStorage already saved as fallback

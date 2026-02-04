@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { scale } from 'svelte/transition';
-	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
 	import { Monitor, MapPin, Save, Fingerprint, Copy } from 'lucide-svelte';
 	import { message } from '@tauri-apps/plugin-dialog';
+	import { configService } from '$lib/logic/system/configService';
 
 	let terminalName = '';
 	let terminalId = '';
@@ -15,13 +15,14 @@
 	});
 
 	async function loadConfig() {
-		try {
-			const config: any = await invoke('get_app_config');
+		const res = await configService.getAppConfig();
+		if (res.ok) {
+			const config = res.data;
 			terminalName = config.terminal.nombre;
 			terminalId = config.terminal.id;
 			terminalLocation = config.terminal.ubicacion || '';
-		} catch (err) {
-			console.error('Error loading config:', err);
+		} else {
+			console.error('Error loading config:', res.error);
 		}
 	}
 
@@ -35,25 +36,21 @@
 		}
 
 		loading = true;
-		try {
-			await invoke('update_terminal_config', {
-				nombre: terminalName,
-				ubicacion: terminalLocation
-			});
+		const res = await configService.updateTerminalConfig(terminalName, terminalLocation);
+		if (res.ok) {
 			await message('Configuración guardada correctamente.', {
 				title: 'Éxito',
 				kind: 'info'
 			});
 			await loadConfig();
-		} catch (err) {
-			console.error('Error saving config:', err);
-			await message(`Error al guardar: ${err}`, {
+		} else {
+			console.error('Error saving config:', res.error);
+			await message(`Error al guardar: ${res.error}`, {
 				title: 'Error',
 				kind: 'error'
 			});
-		} finally {
-			loading = false;
 		}
+		loading = false;
 	}
 
 	function copyId() {

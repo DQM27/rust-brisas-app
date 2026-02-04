@@ -2,12 +2,12 @@
 	import { generalSettings } from '$lib/stores/settingsStore';
 	import { scale } from 'svelte/transition';
 	import { Check, X, Power, Volume2, Music, Upload } from 'lucide-svelte';
-	import { invoke } from '@tauri-apps/api/core';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-5-french-toast';
 	import { can } from '$lib/logic/permissions';
 	import { currentUser } from '$lib/stores/auth';
+	import { configService } from '$lib/logic/system/configService';
 
 	// Permisos
 	const canUpdate = $derived($currentUser && can($currentUser, 'settings_general:update'));
@@ -20,37 +20,38 @@
 
 	// Cargar configuración al montar
 	onMount(async () => {
-		try {
-			const config = await invoke<any>('get_app_config');
+		const res = await configService.getAppConfig();
+		if (res.ok) {
+			const config = res.data;
 			alertSound = config?.audio?.alert_sound ?? 'Hand';
 			useCustomSound = config?.audio?.use_custom ?? false;
 			customSoundPath = config?.audio?.custom_sound_path ?? null;
-		} catch (e) {
-			console.warn('No se pudo cargar config de la aplicación:', e);
+		} else {
+			console.warn('No se pudo cargar config de la aplicación:', res.error);
 		}
 	});
 
 	async function saveAudioConfig() {
-		try {
-			await invoke('update_audio_config', { alertSound });
+		const res = await configService.updateAudioConfig(alertSound);
+		if (res.ok) {
 			toast.success('Sonido de sistema actualizado', { icon: '🔔' });
-		} catch (e) {
-			console.error('Error saving audio config:', e);
+		} else {
+			console.error('Error saving audio config:', res.error);
 			toast.error('Error al guardar configuración de audio');
 		}
 	}
 
 	async function toggleCustomSound() {
-		try {
-			if (useCustomSound && !customSoundPath) {
-				toast.error('Primero selecciona un archivo de sonido');
-				useCustomSound = false;
-				return;
-			}
-			await invoke('set_use_custom_sound', { useCustom: useCustomSound });
+		if (useCustomSound && !customSoundPath) {
+			toast.error('Primero selecciona un archivo de sonido');
+			useCustomSound = false;
+			return;
+		}
+		const res = await configService.setUseCustomSound(useCustomSound);
+		if (res.ok) {
 			toast.success(useCustomSound ? 'Usando sonido personalizado' : 'Usando sonido nativo');
-		} catch (e) {
-			console.error('Error toggling custom sound:', e);
+		} else {
+			console.error('Error toggling custom sound:', res.error);
 			toast.error('Error al cambiar tipo de sonido');
 		}
 	}
@@ -69,12 +70,14 @@
 
 			if (selected && typeof selected === 'string') {
 				uploadingSound = true;
-				const newPath = await invoke<string>('upload_custom_sound', {
-					filePath: selected
-				});
-				customSoundPath = newPath;
-				useCustomSound = true;
-				toast.success('Sonido personalizado cargado correctamente');
+				const res = await configService.uploadCustomSound(selected);
+				if (res.ok) {
+					customSoundPath = res.data;
+					useCustomSound = true;
+					toast.success('Sonido personalizado cargado correctamente');
+				} else {
+					toast.error(`Error: ${res.error}`);
+				}
 			}
 		} catch (e) {
 			console.error('Error picking sound:', e);
@@ -85,10 +88,9 @@
 	}
 
 	async function testSound() {
-		try {
-			await invoke('play_alert_sound');
-		} catch (e) {
-			console.error('Error playing test sound:', e);
+		const res = await configService.playAlertSound();
+		if (!res.ok) {
+			console.error('Error playing test sound:', res.error);
 			toast.error('No se pudo reproducir el sonido de prueba');
 		}
 	}
