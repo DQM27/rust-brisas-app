@@ -12,30 +12,18 @@
 		Key,
 		X
 	} from 'lucide-svelte';
+	import { save, open, message, confirm } from '@tauri-apps/plugin-dialog';
+	import { relaunch } from '@tauri-apps/plugin-process';
+
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 
-	// Services
-	import {
-		listBackups,
-		deleteBackup,
-		restoreFromAutoBackup,
-		restorePortableBackup,
-		cleanupOldBackups,
-		getBackupConfig,
-		updateBackupConfig,
-		backupDatabaseAuto,
-		backupDatabasePortable,
-		backupDatabase,
-		restoreDatabase
-	} from '$lib/services/backupService';
-	import { message, confirm } from '@tauri-apps/plugin-dialog';
-
 	// Types
 	import type { BackupEntry, BackupConfig } from '$lib/types/backup';
 
-	// Logic
+	// Logic & Services
+	import * as backupService from '$lib/logic/backup/backupService';
 	import { getBackupColumns } from '$lib/logic/backup/backupColumns';
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 
@@ -98,11 +86,14 @@
 		loading = true;
 		error = '';
 		try {
-			const [backupList, backupConfig] = await Promise.all([listBackups(), getBackupConfig()]);
-			backups = backupList;
-			config = backupConfig;
+			const [backupListRes, backupConfigRes] = await Promise.all([
+				backupService.fetchAllBackups(),
+				backupService.getConfiguration()
+			]);
 
-			if (config) {
+			if (backupListRes.ok) backups = backupListRes.data;
+			if (backupConfigRes.ok) {
+				config = backupConfigRes.data;
 				configEnabled = config.enabled;
 				configHora = config.hora;
 				configDiasRetencion = config.diasRetencion;
@@ -119,29 +110,78 @@
 	// ==========================================
 	async function handleBackupNow() {
 		const toastId = toast.loading('Creando backup...');
-		try {
-			const filename = await backupDatabaseAuto();
-			toast.success(`Backup creado: ${filename}`, { id: toastId });
+		const result = await backupService.runAutoBackup();
+		if (result.ok) {
+			toast.success(`Backup creado: ${result.data}`, { id: toastId });
 			await loadBackups();
-		} catch (err) {
-			console.error('Error creating backup:', err);
-			toast.error(`Error: ${err}`, { id: toastId });
+		} else {
+			toast.error(`Error: ${result.error}`, { id: toastId });
 		}
 	}
 
 	async function handleBackupManual() {
 		try {
-			await backupDatabase();
-		} catch (err) {
-			console.error('Error in manual backup:', err);
+			const filePath = await save({
+				filters: [
+					{
+						name: 'Brisas Database Backup',
+						extensions: ['db', 'sqlite', 'bak', 'penc', 'enc', 'surql']
+					}
+				],
+				defaultPath: `brisas_backup_${new Date().toISOString().slice(0, 10)}.db`
+			});
+
+			if (!filePath) return;
+
+			const result = await backupService.runManualBackup(filePath);
+			if (result.ok) {
+				await message('Copia de seguridad creada correctamente.', {
+					title: 'Backup Exitoso',
+					kind: 'info'
+				});
+				await loadBackups();
+			} else {
+				toast.error(`Error: ${result.error}`);
+			}
+		} catch (error) {
+			console.error('Error in manual backup:', error);
 		}
 	}
 
 	async function handleRestoreFromFile() {
 		try {
-			await restoreDatabase();
-		} catch (err) {
-			console.error('Error restoring from file:', err);
+			const filePath = await open({
+				multiple: false,
+				filters: [
+					{
+						name: 'Brisas Database Backup',
+						extensions: ['db', 'sqlite', 'bak', 'penc', 'enc', 'surql']
+					}
+				]
+			});
+
+			if (!filePath) return;
+
+			const confirmed = await confirm(
+				'⚠️ ¡ADVERTENCIA!\n\nAl restaurar este backup, se perderán todos los datos actuales y serán reemplazados por los del archivo seleccionado.\n\nLa aplicación se reiniciará automáticamente para aplicar los cambios.\n\n¿Estás seguro de continuar?',
+				{ title: 'Confirmar Restauración', kind: 'warning' }
+			);
+
+			if (!confirmed) return;
+
+			const result = await backupService.runManualRestore(filePath as string);
+
+			if (result.ok) {
+				await message(
+					'El archivo ha sido preparado correctamente. La aplicación se reiniciará ahora para aplicar los cambios.',
+					{ title: 'Reinicio Requerido', kind: 'info' }
+				);
+				await relaunch();
+			} else {
+				toast.error(`Error: ${result.error}`);
+			}
+		} catch (error) {
+			console.error('Error restoring from file:', error);
 		}
 	}
 
@@ -165,9 +205,9 @@
 		if (passwordMode === 'create') {
 			isCreatingPortable = true;
 			const toastId = toast.loading('Creando backup portable...');
-			try {
-				const filename = await backupDatabasePortable(passwordInput);
-				toast.success(`Backup portable creado: ${filename}`, { id: toastId });
+			const result = await backupService.createPortableBackup(passwordInput);
+			if (result.ok) {
+				toast.success(`Backup portable creado: ${result.data}`, { id: toastId });
 				await message(
 					'⚠️ Guarda la contraseña en un lugar seguro.\nSin ella no podrás restaurar este backup.',
 					{
@@ -176,22 +216,27 @@
 					}
 				);
 				await loadBackups();
-			} catch (err) {
-				console.error('Error creating portable backup:', err);
-				toast.error(`Error: ${err}`, { id: toastId });
-			} finally {
-				isCreatingPortable = false;
+			} else {
+				toast.error(`Error: ${result.error}`, { id: toastId });
 			}
+			isCreatingPortable = false;
 		} else if (passwordMode === 'restore' && pendingRestoreEntry) {
 			const toastId = toast.loading('Restaurando backup portable...');
-			try {
-				await restorePortableBackup(pendingRestoreEntry.nombre, passwordInput);
-			} catch (err) {
-				console.error('Error restoring portable backup:', err);
-				toast.error(`Error: ${err}`, { id: toastId });
-			} finally {
-				pendingRestoreEntry = null;
+			const result = await backupService.preparePortableRestore(
+				pendingRestoreEntry.nombre,
+				passwordInput
+			);
+			if (result.ok) {
+				toast.success('Restaura preparada', { id: toastId });
+				await message(
+					'El archivo ha sido preparado correctamente. La aplicación se reiniciará ahora.',
+					{ title: 'Reinicio Requerido', kind: 'info' }
+				);
+				await relaunch();
+			} else {
+				toast.error(`Error: ${result.error}`, { id: toastId });
 			}
+			pendingRestoreEntry = null;
 		}
 
 		passwordInput = '';
@@ -210,11 +255,22 @@
 			return;
 		}
 
-		try {
-			await restoreFromAutoBackup(entry.nombre);
-		} catch (err) {
-			console.error('Error restoring backup:', err);
-			await message(`Error al restaurar: ${err}`, {
+		const confirmed = await confirm(
+			`⚠️ ¡ADVERTENCIA!\n\nAl restaurar "${entry.nombre}", se perderán todos los datos actuales.\n\nLa aplicación se reiniciará automáticamente para aplicar los cambios.\n\n¿Estás seguro de continuar?`,
+			{ title: 'Confirmar Restauración', kind: 'warning' }
+		);
+
+		if (!confirmed) return;
+
+		const result = await backupService.prepareAutoRestore(entry.nombre);
+		if (result.ok) {
+			await message('Copia de seguridad preparada. Reiniciando...', {
+				title: 'Reinicio Requerido',
+				kind: 'info'
+			});
+			await relaunch();
+		} else {
+			await message(`Error al restaurar: ${result.error}`, {
 				title: 'Error',
 				kind: 'error'
 			});
@@ -232,13 +288,12 @@
 		if (!confirmed) return;
 
 		const toastId = toast.loading('Eliminando...');
-		try {
-			await deleteBackup(entry.nombre);
+		const result = await backupService.deleteBackupFile(entry.nombre);
+		if (result.ok) {
 			toast.success('Backup eliminado', { id: toastId });
 			await loadBackups();
-		} catch (err) {
-			console.error('Error deleting backup:', err);
-			toast.error(`Error: ${err}`, { id: toastId });
+		} else {
+			toast.error(`Error: ${result.error}`, { id: toastId });
 		}
 	}
 
@@ -252,11 +307,8 @@
 		const toastId = toast.loading('Eliminando...');
 		let errors = 0;
 		for (const entry of selectedRows) {
-			try {
-				await deleteBackup(entry.nombre);
-			} catch {
-				errors++;
-			}
+			const res = await backupService.deleteBackupFile(entry.nombre);
+			if (!res.ok) errors++;
 		}
 
 		if (errors === 0) {

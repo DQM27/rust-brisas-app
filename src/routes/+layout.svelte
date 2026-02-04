@@ -19,7 +19,11 @@
 	import QuickUserSwitchModal from '$lib/components/modals/QuickUserSwitchModal.svelte';
 	import ProfileModal from '$lib/components/user/ProfileModal.svelte';
 	import GlobalConfirmModal from '$lib/components/shared/GlobalConfirmModal.svelte';
-	import { needsSetup, setWindowDecorations, setWindowSize } from '$lib/services/keyringService';
+	import {
+		needsSetup,
+		setWindowDecorations,
+		setWindowSize
+	} from '$lib/logic/keyring/keyringService';
 	import {
 		setupWizardVisible,
 		showShortcutsHelp,
@@ -65,7 +69,8 @@
 		(async () => {
 			try {
 				await modulesStore.load(); // Cargar configuración de módulos
-				$setupWizardVisible = await needsSetup();
+				const setupRes = await needsSetup();
+				$setupWizardVisible = setupRes.ok ? setupRes.data : false;
 				if ($setupWizardVisible) {
 					await setWindowDecorations(false);
 					await setWindowSize(500, 550);
@@ -100,7 +105,7 @@
 					// Ideally we would prevent default, await log, then close,
 					// but that complicates things. Rust backend might act faster.
 					// Let's at least trigger the log.
-					const { auditService } = await import('$lib/services/auditService');
+					const { auditService } = await import('$lib/logic/audit/auditService');
 					const { getCurrentSessionDuration } = await import('$lib/stores/sessionStore');
 
 					// Use a blocking invoke if possible or just fire it

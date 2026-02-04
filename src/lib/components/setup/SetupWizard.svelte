@@ -12,9 +12,9 @@
 		importMasterKey,
 		updateArgon2Params,
 		generateRecoveryFragments,
-		recoverFromFragments,
-		type Argon2Params
-	} from '$lib/services/keyringService';
+		recoverFromFragments
+	} from '$lib/logic/keyring/keyringService';
+	import type { Argon2Params } from '$lib/types/keyring';
 
 	// Props
 	interface Props {
@@ -68,10 +68,12 @@
 
 	async function checkSystemKey() {
 		try {
-			const status = await getCredentialStatus();
-			keyFoundInSystem = status.argon2_configured;
-			if (keyFoundInSystem && argon2Params.secret === '') {
-				argon2Params.secret = '********'; // Placeholder visual
+			const statusRes = await getCredentialStatus();
+			if (statusRes.ok) {
+				keyFoundInSystem = statusRes.data.argon2_configured;
+				if (keyFoundInSystem && argon2Params.secret === '') {
+					argon2Params.secret = '********'; // Placeholder visual
+				}
 			}
 		} catch (e) {
 			console.error('Error verificando llaves:', e);
@@ -100,9 +102,13 @@
 		isProcessing = true;
 		error = '';
 		try {
-			const secret = await generateRandomSecret();
-			argon2Params.secret = secret;
-			await updateArgon2Params(argon2Params);
+			const secretRes = await generateRandomSecret();
+			if (!secretRes.ok) throw new Error(secretRes.error);
+			argon2Params.secret = secretRes.data;
+
+			const updateRes = await updateArgon2Params(argon2Params);
+			if (!updateRes.ok) throw new Error(updateRes.error);
+
 			const installPass = setupPassword || generateInstallPassword();
 			const filePath = await save({
 				title: 'Guardar Llave Maestra de Seguridad',
@@ -115,7 +121,9 @@
 				return;
 			}
 
-			await exportMasterKey(filePath, installPass);
+			const exportRes = await exportMasterKey(filePath, installPass);
+			if (!exportRes.ok) throw new Error(exportRes.error);
+
 			generatedPassword = installPass;
 			keyFoundInSystem = true;
 		} catch (e: unknown) {
@@ -132,7 +140,9 @@
 	async function handleGenerateFragments() {
 		isGeneratingFragments = true;
 		try {
-			const fragments = await generateRecoveryFragments();
+			const fragRes = await generateRecoveryFragments();
+			if (!fragRes.ok) throw new Error(fragRes.error);
+			const fragments = fragRes.data;
 
 			await message(
 				'Se han generado 5 fragmentos. Procede a guardarlos en lugares seguros y diferentes.',
@@ -177,11 +187,13 @@
 				return;
 			}
 
-			await importMasterKey(filePath as string, importPassword);
+			const importRes = await importMasterKey(filePath as string, importPassword);
+			if (!importRes.ok) throw new Error(importRes.error);
+
 			keyFoundInSystem = true;
 			keyImported = true;
-			const status = await getCredentialStatus();
-			if (status.argon2_configured) {
+			const statusRes = await getCredentialStatus();
+			if (statusRes.ok && statusRes.data.argon2_configured) {
 				argon2Params.secret = '********';
 			}
 		} catch (e: unknown) {
@@ -224,11 +236,13 @@
 				fragments.push(content);
 			}
 
-			await recoverFromFragments(fragments);
+			const recoverRes = await recoverFromFragments(fragments);
+			if (!recoverRes.ok) throw new Error(recoverRes.error);
+
 			keyFoundInSystem = true;
 			keyImported = true;
-			const status = await getCredentialStatus();
-			if (status.argon2_configured) {
+			const statusRes = await getCredentialStatus();
+			if (statusRes.ok && statusRes.data.argon2_configured) {
 				argon2Params.secret = '********';
 			}
 
@@ -251,11 +265,12 @@
 		isSubmitting = true;
 		error = '';
 		try {
-			await setupCredentials({
+			const res = await setupCredentials({
 				argon2: argon2Params,
 				terminal_name: terminalName,
 				terminal_location: terminalLocation
 			});
+			if (!res.ok) throw new Error(res.error);
 			onComplete?.();
 		} catch (e: unknown) {
 			const errMsg = e instanceof Error ? e.message : String(e);
@@ -279,7 +294,11 @@
 
 			if (confirmed) {
 				isResetting = true;
-				await resetAllCredentials(true);
+				const res = await resetAllCredentials(true);
+				if (!res.ok) {
+					isResetting = false;
+					throw new Error(res.error);
+				}
 				setTimeout(() => {
 					window.location.reload();
 				}, 800);

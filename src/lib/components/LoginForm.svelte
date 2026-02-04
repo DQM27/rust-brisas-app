@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { preventDefault } from 'svelte/legacy';
 	import { onMount } from 'svelte';
-	import { exitApp } from '$lib/services/keyringService';
+	import { exitApp } from '$lib/logic/keyring/keyringService';
 	import { loginStore } from '$lib/stores/loginStore.svelte';
 	import { validateLoginForm } from '$lib/logic/auth/loginValidation';
 

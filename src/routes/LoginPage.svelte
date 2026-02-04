@@ -6,7 +6,7 @@
 	import { toast } from 'svelte-5-french-toast';
 	import type { UserResponse } from '$lib/types/user';
 	import { X } from 'lucide-svelte';
-	import { setWindowSize } from '$lib/services/keyringService';
+	import { setWindowSize } from '$lib/logic/keyring/keyringService';
 
 	// Estado UI
 	let view = $state<'login' | 'change_password'>('login');

@@ -165,10 +165,11 @@ class LoginStore {
 
 	private async loadPasswordFromKeyring(email: string): Promise<void> {
 		try {
-			const { getSecret } = await import('$lib/services/keyringService');
+			const { getSecret } = await import('$lib/logic/keyring/keyringService');
 			// SINGLE USER MODE: Usamos una key constante para que solo exista UNA contraseña guardada a la vez
 			const key = 'brisas:current_user_password';
-			const password = await getSecret(key);
+			const res = await getSecret(key);
+			const password = res.ok ? res.data : null;
 
 			// Importante: Solo cargamos si tenemos un email (ya validado por el caller)
 			if (password && email) {
@@ -196,7 +197,7 @@ class LoginStore {
 
 	private async savePasswordToKeyring(email: string, password: string): Promise<void> {
 		try {
-			const { saveSecret } = await import('$lib/services/keyringService');
+			const { saveSecret } = await import('$lib/logic/keyring/keyringService');
 			// SINGLE USER MODE: Sobreescribimos siempre la misma key
 			const key = 'brisas:current_user_password';
 			await saveSecret(key, password);
@@ -207,7 +208,7 @@ class LoginStore {
 
 	private async removePasswordFromKeyring(): Promise<void> {
 		try {
-			const { deleteSecret } = await import('$lib/services/keyringService');
+			const { deleteSecret } = await import('$lib/logic/keyring/keyringService');
 			const key = 'brisas:current_user_password';
 			await deleteSecret(key);
 		} catch (e) {

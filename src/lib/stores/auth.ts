@@ -4,7 +4,7 @@ import { resetTabs } from './tabs';
 import type { UserResponse } from '$lib/types/user';
 import { startSession, stopSession, getCurrentSessionDuration } from './sessionStore';
 import { sessionSettings } from './sessionSettingsStore';
-import { auditService } from '$lib/services/auditService';
+import { auditService } from '$lib/logic/audit/auditService';
 
 // Session-only stores (NOT persisted - login required after app restart)
 export const isAuthenticated = writable<boolean>(false);

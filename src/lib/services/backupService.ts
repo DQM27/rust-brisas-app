@@ -1,8 +1,8 @@
-import { invoke } from '@tauri-apps/api/core';
 import { save, open } from '@tauri-apps/plugin-dialog';
 import { message, confirm } from '@tauri-apps/plugin-dialog';
 import { relaunch } from '@tauri-apps/plugin-process';
 import type { BackupEntry, BackupConfig } from '$lib/types/backup';
+import { backupApi } from '$lib/api/backup';
 
 // ============================================================================
 // BACKUP MANUAL
@@ -18,7 +18,7 @@ export async function backupDatabase() {
 			filters: [
 				{
 					name: 'Brisas Database Backup',
-					extensions: ['db', 'sqlite', 'bak']
+					extensions: ['db', 'sqlite', 'bak', 'penc', 'enc', 'surql']
 				}
 			],
 			defaultPath: `brisas_backup_${new Date().toISOString().slice(0, 10)}.db`
@@ -26,7 +26,7 @@ export async function backupDatabase() {
 
 		if (!filePath) return;
 
-		await invoke('backup_database', { destinationPath: filePath });
+		await backupApi.backupDatabase(filePath);
 		await message('Copia de seguridad creada correctamente.', {
 			title: 'Backup Exitoso',
 			kind: 'info'
@@ -48,7 +48,7 @@ export async function restoreDatabase() {
 			filters: [
 				{
 					name: 'Brisas Database Backup',
-					extensions: ['db', 'sqlite', 'bak']
+					extensions: ['db', 'sqlite', 'bak', 'penc', 'enc', 'surql']
 				}
 			]
 		});
@@ -62,7 +62,7 @@ export async function restoreDatabase() {
 
 		if (!confirmed) return;
 
-		await invoke('restore_database', { sourcePath: filePath });
+		await backupApi.restoreDatabase(filePath);
 
 		await message(
 			'El archivo ha sido preparado correctamente. La aplicación se reiniciará ahora para aplicar los cambios.',
@@ -85,14 +85,14 @@ export async function restoreDatabase() {
  * @returns Nombre del archivo generado
  */
 export async function backupDatabaseAuto(): Promise<string> {
-	return await invoke<string>('backup_database_auto');
+	return await backupApi.backupDatabaseAuto();
 }
 
 /**
  * Lista todos los backups existentes en el directorio de backups.
  */
 export async function listBackups(): Promise<BackupEntry[]> {
-	return await invoke<BackupEntry[]>('list_backups');
+	return await backupApi.listBackups();
 }
 
 /**
@@ -100,7 +100,7 @@ export async function listBackups(): Promise<BackupEntry[]> {
  * @param filename Nombre del archivo a eliminar
  */
 export async function deleteBackup(filename: string): Promise<void> {
-	await invoke('delete_backup', { filename });
+	await backupApi.deleteBackup(filename);
 }
 
 /**
@@ -115,7 +115,7 @@ export async function restoreFromAutoBackup(filename: string): Promise<void> {
 
 	if (!confirmed) return;
 
-	await invoke('restore_from_auto_backup', { filename });
+	await backupApi.restoreFromAutoBackup(filename);
 
 	await message('El backup ha sido preparado correctamente. La aplicación se reiniciará ahora.', {
 		title: 'Reinicio Requerido',
@@ -130,7 +130,7 @@ export async function restoreFromAutoBackup(filename: string): Promise<void> {
  * @returns Cantidad de backups eliminados
  */
 export async function cleanupOldBackups(): Promise<number> {
-	return await invoke<number>('cleanup_old_backups');
+	return await backupApi.cleanupOldBackups();
 }
 
 /**
@@ -140,7 +140,7 @@ export async function cleanupOldBackups(): Promise<number> {
  * @returns Nombre del archivo generado
  */
 export async function backupDatabasePortable(password: string): Promise<string> {
-	return await invoke<string>('backup_database_portable', { password });
+	return await backupApi.backupDatabasePortable(password);
 }
 
 /**
@@ -156,7 +156,7 @@ export async function restorePortableBackup(filename: string, password: string):
 
 	if (!confirmed) return;
 
-	await invoke('restore_portable_backup', { filename, password });
+	await backupApi.restorePortableBackup(filename, password);
 
 	await message('El backup ha sido preparado correctamente. La aplicación se reiniciará ahora.', {
 		title: 'Reinicio Requerido',
@@ -195,7 +195,7 @@ export function getEncryptionLabel(type: string): string {
  * Obtiene la configuración actual de backup.
  */
 export async function getBackupConfig(): Promise<BackupConfig> {
-	return await invoke<BackupConfig>('get_backup_config');
+	return await backupApi.getBackupConfig();
 }
 
 /**
@@ -206,9 +206,5 @@ export async function updateBackupConfig(
 	hora: string,
 	diasRetencion: number
 ): Promise<BackupConfig> {
-	return await invoke<BackupConfig>('update_backup_config', {
-		enabled,
-		hora,
-		diasRetencion
-	});
+	return await backupApi.updateBackupConfig(enabled, hora, diasRetencion);
 }

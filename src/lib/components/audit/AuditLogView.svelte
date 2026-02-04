@@ -2,7 +2,8 @@
 <!-- Vista unificada de auditoría de sistema siguiendo patrón de grids -->
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { auditService, type SysLogEntry } from '$lib/services/auditService';
+	import { auditService } from '$lib/logic/audit/auditService';
+	import type { SysLogEntry } from '$lib/types/audit';
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import { RefreshCw, AlertCircle } from 'lucide-svelte';
@@ -139,7 +140,12 @@
 		isLoading = true;
 		error = '';
 		try {
-			tableData = await auditService.getLogs(500, 0);
+			const result = await auditService.fetchLogs(500, 0);
+			if (result.ok) {
+				tableData = result.data;
+			} else {
+				error = result.error;
+			}
 		} catch (err) {
 			console.error('Error loading logs:', err);
 			error = 'Error al cargar los registros de auditoría';
