@@ -195,13 +195,18 @@ where
     }
 
     pub async fn get_all_contratistas(&self) -> Result<ContratistaListResponse, ContratistaError> {
+        info!("📋 [DEBUG] Iniciando get_all_contratistas...");
         let raw_list = self.repo.find_all_fetched().await.map_err(map_db_error)?;
+        info!("📋 [DEBUG] Registros crudos obtenidos de DB: {}", raw_list.len());
+
         let mut contratistas = Vec::new();
         for c in raw_list {
             contratistas.push(self.build_response_fetched(c).await?);
         }
 
         let total = contratistas.len();
+        info!("📋 [DEBUG] Total de contratistas procesados: {}", total);
+
         let activos = contratistas.iter().filter(|c| c.estado == EstadoContratista::Activo).count();
         let con_praind_vencido = contratistas.iter().filter(|c| c.praind_vencido).count();
         let requieren_atencion = contratistas.iter().filter(|c| c.requiere_atencion).count();
