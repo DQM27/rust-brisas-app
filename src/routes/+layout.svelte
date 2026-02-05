@@ -101,8 +101,8 @@
 {:else if showSetupWizard}
 	<SetupWizard onComplete={handleSetupComplete} />
 {:else}
+	<Toast />
 	<div class="flex flex-col h-screen bg-surface-1 text-primary overflow-hidden font-sans">
-		<Toast />
 		{@render children()}
 
 		<!-- Global Managers & Providers -->

@@ -6,6 +6,7 @@ import { browser } from '$app/environment';
 // =============================================================================
 
 export type Season = 'winter' | 'spring' | 'summer' | 'autumn' | 'rain';
+export type ToastPosition = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
 
 export interface GeneralSettings {
 	// === Visual Background ===
@@ -33,6 +34,7 @@ export interface GeneralSettings {
 	// === Notifications ===
 	showToasts: boolean;
 	enableNotificationSounds: boolean;
+	toastPosition: ToastPosition;
 }
 
 // =============================================================================
@@ -55,7 +57,8 @@ const DEFAULT_SETTINGS: GeneralSettings = {
 	isKioskMode: false,
 	disableSetupWizard: false,
 	showToasts: true,
-	enableNotificationSounds: true
+	enableNotificationSounds: true,
+	toastPosition: 'bottom-right'
 };
 
 // =============================================================================
@@ -120,6 +123,7 @@ export interface GeneralSettingsStore extends Writable<GeneralSettings> {
 	toggleSetupWizard: () => void;
 	toggleToasts: () => void;
 	toggleNotificationSounds: () => void;
+	setToastPosition: (position: ToastPosition) => void;
 }
 
 function createGeneralSettingsStore(): GeneralSettingsStore {
@@ -167,7 +171,8 @@ function createGeneralSettingsStore(): GeneralSettingsStore {
 		toggleSetupWizard: () => update((s) => ({ ...s, disableSetupWizard: !s.disableSetupWizard })),
 		toggleToasts: () => update((s) => ({ ...s, showToasts: !s.showToasts })),
 		toggleNotificationSounds: () =>
-			update((s) => ({ ...s, enableNotificationSounds: !s.enableNotificationSounds }))
+			update((s) => ({ ...s, enableNotificationSounds: !s.enableNotificationSounds })),
+		setToastPosition: (position) => update((s) => ({ ...s, toastPosition: position }))
 	};
 }
 

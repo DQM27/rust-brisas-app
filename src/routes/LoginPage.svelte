@@ -3,7 +3,7 @@
 	import LoginForm from '$lib/components/LoginForm.svelte';
 	import ChangePasswordPanel from '$lib/components/ChangePasswordPanel.svelte';
 	import { authService } from '$lib/logic/auth/authService';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import type { UserResponse } from '$lib/types/user';
 	import { X } from 'lucide-svelte';
 	import { setWindowSize } from '$lib/logic/keyring/keyringService';
@@ -33,7 +33,7 @@
 				completeLogin(result.data);
 			}
 		} else {
-			toast.error(result.error || 'Error al iniciar sesión', { icon: '✕' });
+			toastService.error(result.error || 'Error al iniciar sesión', { icon: '✕' });
 		}
 
 		loading = false;
@@ -42,7 +42,7 @@
 	function completeLogin(user: UserResponse) {
 		setAuth(user);
 		formRef?.reset();
-		toast.success('Sesión iniciada correctamente', { icon: '✓' });
+		toastService.success('Sesión iniciada correctamente', { icon: '✓' });
 	}
 
 	function handlePasswordChanged() {

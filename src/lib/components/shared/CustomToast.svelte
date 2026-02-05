@@ -5,12 +5,18 @@
 		toast: any;
 		icon?: any;
 		message?: any;
+		position?: string;
 	}
 
-	let { toast, icon, message }: Props = $props();
+	let { toast, icon, message, position }: Props = $props();
 </script>
 
-<div class="whatsapp-toast-inner" data-type={toast.type} data-exit={toast.visible ? undefined : ''}>
+<div
+	class="whatsapp-toast-inner"
+	data-type={toast.type}
+	data-position={position}
+	data-exit={toast.visible ? undefined : ''}
+>
 	<div class="toast-icon-wrapper">
 		{#if toast.type === 'success'}
 			<CheckCircle2 size={20} class="icon-success" />
@@ -36,17 +42,32 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
-		background: var(--surface-2, #2a2f32);
-		color: var(--text-primary, #e9edef);
-		padding: 12px 16px;
-		border-radius: 12px;
-		box-shadow:
-			0 10px 15px -3px rgba(0, 0, 0, 0.2),
-			0 4px 6px -2px rgba(0, 0, 0, 0.1);
-		border: 1px solid var(--border-emphasis, rgba(255, 255, 255, 0.1));
-		min-width: 280px;
-		max-width: 400px;
+		background: var(--color-surface-secondary, #252526);
+		color: var(--color-text-primary, #e8e8e8);
+		padding: 10px 14px;
+		border-radius: 8px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+		border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.05));
+		min-width: 260px;
+		max-width: 350px;
+		margin: 0;
 		animation: slideInWhatsApp 0.25s cubic-bezier(0.2, -0.1, 0.1, 1.2);
+	}
+
+	/* Alineación manual basada en la posición configurada para evitar centrado por defecto */
+	.whatsapp-toast-inner[data-position^='top-left'],
+	.whatsapp-toast-inner[data-position^='bottom-left'] {
+		margin-right: auto;
+	}
+
+	.whatsapp-toast-inner[data-position^='top-right'],
+	.whatsapp-toast-inner[data-position^='bottom-right'] {
+		margin-left: auto;
+	}
+
+	.whatsapp-toast-inner[data-position$='-center'] {
+		margin-left: auto;
+		margin-right: auto;
 	}
 
 	.whatsapp-toast-inner[data-exit] {

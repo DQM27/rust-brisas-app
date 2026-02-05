@@ -315,6 +315,29 @@
 					() => generalSettings.toggleNotificationSounds(),
 					!canUpdate
 				)}
+
+				<!-- Posición de Toasts -->
+				<div class="flex items-center justify-between py-3">
+					<div class="flex items-center gap-3">
+						<div class="p-2 rounded-md bg-purple-50 dark:bg-purple-900/20 text-purple-500">
+							<Bell size={18} />
+						</div>
+						<span class="text-secondary font-medium">Posición de las Notificaciones</span>
+					</div>
+					<select
+						value={$generalSettings.toastPosition}
+						onchange={(e) => generalSettings.setToastPosition(e.currentTarget.value as any)}
+						disabled={!canUpdate}
+						class="rounded-md border border-emphasis bg-surface-2 px-3 py-1.5 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
+					>
+						<option value="top-left">Superior Izquierda</option>
+						<option value="top-center">Superior Centro</option>
+						<option value="top-right">Superior Derecha</option>
+						<option value="bottom-left">Inferior Izquierda</option>
+						<option value="bottom-center">Inferior Centro</option>
+						<option value="bottom-right">Inferior Derecha</option>
+					</select>
+				</div>
 			</div>
 		</div>
 

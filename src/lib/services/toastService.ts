@@ -18,9 +18,11 @@ export const toastService = {
 
         return toast.custom(CustomToast as any, {
             ...options,
+            position: settings.toastPosition,
             props: {
                 toast: { type: 'success', visible: true, ...options },
-                message
+                message,
+                position: settings.toastPosition
             }
         } as any);
     },
@@ -65,9 +67,11 @@ export const toastService = {
 
         return toast.custom(CustomToast as any, {
             ...options,
+            position: settings.toastPosition,
             props: {
                 toast: { type: 'blank', visible: true, ...options },
-                message
+                message,
+                position: settings.toastPosition
             }
         } as any);
     },
@@ -81,9 +85,11 @@ export const toastService = {
 
         return toast.custom(CustomToast as any, {
             ...options,
+            position: settings.toastPosition,
             props: {
                 toast: { type: 'loading', visible: true, ...options },
-                message
+                message,
+                position: settings.toastPosition
             }
         } as any);
     },
