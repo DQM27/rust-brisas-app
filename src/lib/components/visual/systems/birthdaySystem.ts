@@ -1,5 +1,5 @@
-// =============================================================================
-// BIRTHDAY SYSTEM - Confetti and fireworks celebration!
+// ============================================================================= 
+// BIRTHDAY SYSTEM - Confetti, Balloons, and Fireworks!
 // =============================================================================
 
 import type {
@@ -8,9 +8,10 @@ import type {
 	Confetti,
 	Firework,
 	FireworkParticle,
-	BirthdaySystemState
+	BirthdaySystemState,
+	Balloon
 } from '../types';
-import { BIRTHDAY_CONFIG, randomRange, clamp } from '../constants';
+import { BIRTHDAY_CONFIG, randomRange, randomInt, clamp } from '../constants';
 
 // -----------------------------------------------------------------------------
 // Initialization
@@ -21,47 +22,10 @@ export function initBirthdaySystem(canvas: CanvasContext): BirthdaySystemState {
 
 	return {
 		confetti,
+		balloons: [],
 		fireworks: [],
-		nextFireworkTimer: randomRange(
-			BIRTHDAY_CONFIG.FIREWORK_INTERVAL[0],
-			BIRTHDAY_CONFIG.FIREWORK_INTERVAL[1]
-		)
-	};
-}
-
-// Create initial confetti burst
-function createConfettiBurst(canvas: CanvasContext): Confetti[] {
-	const { width, height } = canvas;
-	const confetti: Confetti[] = [];
-
-	for (let i = 0; i < BIRTHDAY_CONFIG.CONFETTI_COUNT; i++) {
-		confetti.push(createConfetti(width, height, true));
-	}
-
-	return confetti;
-}
-
-function createConfetti(canvasWidth: number, canvasHeight: number, burst: boolean): Confetti {
-	const shapes: Confetti['shape'][] = ['rect', 'circle', 'serpentine'];
-
-	return {
-		x: burst ? canvasWidth / 2 + randomRange(-100, 100) : Math.random() * canvasWidth,
-		y: burst ? canvasHeight * 0.3 : -20,
-		vx: burst ? randomRange(-8, 8) : randomRange(-2, 2),
-		vy: burst ? randomRange(-15, -5) : randomRange(1, 3),
-		rotation: Math.random() * 360,
-		rotationSpeed: randomRange(-10, 10),
-		color:
-			BIRTHDAY_CONFIG.CONFETTI_COLORS[
-				Math.floor(Math.random() * BIRTHDAY_CONFIG.CONFETTI_COLORS.length)
-			],
-		shape: shapes[Math.floor(Math.random() * shapes.length)],
-		size: randomRange(
-			BIRTHDAY_CONFIG.CONFETTI_SIZE_RANGE[0],
-			BIRTHDAY_CONFIG.CONFETTI_SIZE_RANGE[1]
-		),
-		wobble: Math.random() * Math.PI * 2,
-		wobbleSpeed: randomRange(0.05, 0.15)
+		nextFireworkTimer: 1000,
+		nextBalloonTimer: 500
 	};
 }
 
@@ -77,141 +41,190 @@ export function updateBirthdaySystem(
 	const { width, height } = canvas;
 	const dt = render.deltaTime / 16;
 
-	// Update confetti
+	// --- CONFETTI ---
 	let confetti = state.confetti.map((c) => updateConfetti(c, dt, width, height));
-
-	// Respawn confetti that fell off screen (continuous rain)
+	// Respawn logic
 	confetti = confetti.map((c) => {
-		if (c.y > height + 50) {
-			return createConfetti(width, height, false);
-		}
+		if (c.y > height + 20) return createConfetti(width, height, false);
 		return c;
 	});
 
-	// Update fireworks
+	// --- BALLOONS ---
+	let balloons = state.balloons.map((b) => updateBalloon(b, dt));
+	balloons = balloons.filter((b) => b.y > -100); // Remove balloons that flew away
+
+	// Spawn new balloons
+	let nextBalloonTimer = state.nextBalloonTimer - render.deltaTime;
+	if (state.balloons.length < BIRTHDAY_CONFIG.BALLOON_COUNT_LIMIT && nextBalloonTimer <= 0) {
+		balloons.push(createBalloon(width, height));
+		nextBalloonTimer = randomRange(BIRTHDAY_CONFIG.BALLOON_INTERVAL[0], BIRTHDAY_CONFIG.BALLOON_INTERVAL[1]);
+	}
+
+	// --- FIREWORKS ---
 	const fireworks = state.fireworks
 		.map((f) => updateFirework(f, dt))
 		.filter((f) => !isFireworkDead(f));
 
-	// Timer for new fireworks
 	let nextFireworkTimer = state.nextFireworkTimer - render.deltaTime;
-
 	if (nextFireworkTimer <= 0) {
 		fireworks.push(createFirework(width, height));
-		nextFireworkTimer = randomRange(
-			BIRTHDAY_CONFIG.FIREWORK_INTERVAL[0],
-			BIRTHDAY_CONFIG.FIREWORK_INTERVAL[1]
-		);
+		nextFireworkTimer = randomRange(BIRTHDAY_CONFIG.FIREWORK_INTERVAL[0], BIRTHDAY_CONFIG.FIREWORK_INTERVAL[1]);
 	}
 
-	return { confetti, fireworks, nextFireworkTimer };
-}
-
-function updateConfetti(
-	confetti: Confetti,
-	dt: number,
-	_canvasWidth: number,
-	_canvasHeight: number
-): Confetti {
-	let { x, y, vx, vy, rotation, wobble } = confetti;
-
-	// Physics
-	vy += 0.15 * dt; // Gravity
-	vy = Math.min(vy, 5); // Terminal velocity
-
-	// Air resistance
-	vx *= 0.99;
-
-	// Wobble (side to side)
-	wobble += confetti.wobbleSpeed * dt;
-	const wobbleX = Math.sin(wobble) * 2;
-
-	x += (vx + wobbleX) * dt;
-	y += vy * dt;
-	rotation += confetti.rotationSpeed * dt;
-
-	return { ...confetti, x, y, vx, vy, rotation, wobble };
+	return { confetti, balloons, fireworks, nextFireworkTimer, nextBalloonTimer };
 }
 
 // -----------------------------------------------------------------------------
-// Fireworks
+// Logic: Confetti
 // -----------------------------------------------------------------------------
 
-function createFirework(canvasWidth: number, canvasHeight: number): Firework {
+function createConfettiBurst(canvas: CanvasContext): Confetti[] {
+	const confetti: Confetti[] = [];
+	for (let i = 0; i < BIRTHDAY_CONFIG.CONFETTI_COUNT; i++) {
+		confetti.push(createConfetti(canvas.width, canvas.height, true));
+	}
+	return confetti;
+}
+
+function createConfetti(w: number, h: number, burst: boolean): Confetti {
+	const shapes: Confetti['shape'][] = ['rect', 'circle', 'serpentine'];
 	return {
-		x: randomRange(canvasWidth * 0.2, canvasWidth * 0.8),
-		y: canvasHeight,
-		vy: randomRange(-12, -8),
-		targetY: randomRange(canvasHeight * 0.15, canvasHeight * 0.4),
-		color:
-			BIRTHDAY_CONFIG.FIREWORK_COLORS[
-				Math.floor(Math.random() * BIRTHDAY_CONFIG.FIREWORK_COLORS.length)
-			],
-		exploded: false,
-		particles: []
+		x: burst ? w / 2 + randomRange(-100, 100) : randomRange(0, w),
+		y: burst ? h * 0.3 : -20,
+		vx: burst ? randomRange(-8, 8) : randomRange(-2, 2),
+		vy: burst ? randomRange(-15, -5) : randomRange(2, 5),
+		rotation: randomRange(0, 360),
+		rotationSpeed: randomRange(-10, 10),
+		color: BIRTHDAY_CONFIG.CONFETTI_COLORS[randomInt(0, BIRTHDAY_CONFIG.CONFETTI_COLORS.length - 1)],
+		shape: shapes[randomInt(0, shapes.length - 1)],
+		size: randomRange(BIRTHDAY_CONFIG.CONFETTI_SIZE_RANGE[0], BIRTHDAY_CONFIG.CONFETTI_SIZE_RANGE[1]),
+		wobble: randomRange(0, Math.PI * 2),
+		wobbleSpeed: randomRange(0.05, 0.15)
 	};
 }
 
-function updateFirework(firework: Firework, dt: number): Firework {
-	if (!firework.exploded) {
-		// Rising phase
-		const y = firework.y + firework.vy * dt;
+function updateConfetti(c: Confetti, dt: number, _w: number, _h: number): Confetti {
+	c.vy += 0.1 * dt; // Gravity
+	c.vy = Math.min(c.vy, 6);
+	c.vx *= 0.99;
+	c.wobble += c.wobbleSpeed * dt;
+	c.x += (c.vx + Math.cos(c.wobble)) * dt;
+	c.y += c.vy * dt;
+	c.rotation += c.rotationSpeed * dt;
+	return c;
+}
 
-		if (y <= firework.targetY) {
-			// Explode!
-			return {
-				...firework,
-				y: firework.targetY,
-				exploded: true,
-				particles: createExplosionParticles(firework)
-			};
+// -----------------------------------------------------------------------------
+// Logic: Balloons
+// -----------------------------------------------------------------------------
+
+function createBalloon(w: number, h: number): Balloon {
+	return {
+		x: randomRange(w * 0.1, w * 0.9),
+		y: h + 100, // Starts below screen
+		vx: 0,
+		vy: -randomRange(BIRTHDAY_CONFIG.BALLOON_SPEED_RANGE[0], BIRTHDAY_CONFIG.BALLOON_SPEED_RANGE[1]),
+		color: BIRTHDAY_CONFIG.BALLOON_COLORS[randomInt(0, BIRTHDAY_CONFIG.BALLOON_COLORS.length - 1)],
+		stringLength: randomRange(30, 60),
+		wobble: randomRange(0, Math.PI * 2),
+		wobbleSpeed: randomRange(0.02, 0.05),
+		seed: Math.random()
+	};
+}
+
+function updateBalloon(b: Balloon, dt: number): Balloon {
+	b.wobble += b.wobbleSpeed * dt;
+	b.x += Math.sin(b.wobble) * 0.5 * dt; // Gentle sway
+	b.y += b.vy * dt; // Float up
+	return b;
+}
+
+// -----------------------------------------------------------------------------
+// Logic: Fireworks
+// -----------------------------------------------------------------------------
+
+// Interactive: Spawn where clicked
+export function spawnInteractionFirework(state: BirthdaySystemState, x: number, y: number): BirthdaySystemState {
+	const firework = createFirework(1000, 1000); // Dummy size, coords overwritten
+	firework.x = x;
+
+	// Start slightly below click to simulate rapid rise or just explode instantly? 
+	// Let's make it explode instantly for snappy feedback
+	firework.y = y;
+	firework.targetY = y;
+	firework.exploded = true;
+	firework.particles = createExplosionParticles(firework.x, firework.y, firework.color);
+
+	return {
+		...state,
+		fireworks: [...state.fireworks, firework]
+	};
+}
+
+function createFirework(w: number, h: number): Firework {
+	const targetY = randomRange(h * 0.1, h * 0.5);
+	return {
+		x: randomRange(w * 0.2, w * 0.8),
+		y: h,
+		vy: randomRange(-14, -10),
+		targetY,
+		color: BIRTHDAY_CONFIG.FIREWORK_COLORS[randomInt(0, BIRTHDAY_CONFIG.FIREWORK_COLORS.length - 1)],
+		exploded: false,
+		particles: [],
+		trail: []
+	};
+}
+
+function updateFirework(f: Firework, dt: number): Firework {
+	if (!f.exploded) {
+		f.y += f.vy * dt;
+		f.vy += 0.1 * dt; // Gravity drags it down slightly as it rises
+
+		// Add trail point
+		f.trail.push({ x: f.x, y: f.y, opacity: 1.0 });
+		// Fade trails
+		f.trail.forEach(t => t.opacity -= 0.05 * dt);
+		f.trail = f.trail.filter(t => t.opacity > 0);
+
+		if (f.vy >= 0 || f.y <= f.targetY) {
+			f.exploded = true;
+			f.particles = createExplosionParticles(f.x, f.y, f.color);
 		}
-
-		return { ...firework, y };
+		return f;
 	} else {
-		// Explosion phase - update particles
-		const particles = firework.particles
-			.map((p) => updateFireworkParticle(p, dt))
-			.filter((p) => p.opacity > 0);
-
-		return { ...firework, particles };
+		// Update particles
+		f.particles.forEach(p => {
+			p.x += p.vx * dt;
+			p.y += p.vy * dt;
+			p.vy += 0.05 * dt; // Gravity
+			p.vx *= 0.96; // Air resistance
+			p.opacity -= p.decay * dt;
+		});
+		f.particles = f.particles.filter(p => p.opacity > 0);
+		return f;
 	}
 }
 
-function createExplosionParticles(firework: Firework): FireworkParticle[] {
+function createExplosionParticles(x: number, y: number, color: string): FireworkParticle[] {
 	const particles: FireworkParticle[] = [];
 	const count = BIRTHDAY_CONFIG.FIREWORK_PARTICLE_COUNT;
-
 	for (let i = 0; i < count; i++) {
-		const angle = (i / count) * Math.PI * 2;
-		const speed = randomRange(3, 7);
-
+		const angle = (Math.PI * 2 * i) / count;
+		const speed = randomRange(2, 6);
 		particles.push({
-			x: firework.x,
-			y: firework.y,
+			x, y,
 			vx: Math.cos(angle) * speed,
 			vy: Math.sin(angle) * speed,
 			opacity: 1,
-			color: firework.color
+			color,
+			decay: randomRange(0.01, 0.03)
 		});
 	}
-
 	return particles;
 }
 
-function updateFireworkParticle(particle: FireworkParticle, dt: number): FireworkParticle {
-	return {
-		...particle,
-		x: particle.x + particle.vx * dt,
-		y: particle.y + particle.vy * dt,
-		vy: particle.vy + 0.1 * dt, // Gravity
-		vx: particle.vx * 0.98, // Air resistance
-		opacity: particle.opacity - 0.015 * dt
-	};
-}
-
-function isFireworkDead(firework: Firework): boolean {
-	return firework.exploded && firework.particles.length === 0;
+function isFireworkDead(f: Firework): boolean {
+	return f.exploded && f.particles.length === 0;
 }
 
 // -----------------------------------------------------------------------------
@@ -225,117 +238,108 @@ export function renderBirthdaySystem(
 ): void {
 	const { ctx } = canvas;
 
-	// Render fireworks first (behind confetti)
-	state.fireworks.forEach((firework) => {
-		renderFirework(firework, ctx);
-	});
+	// 1. Fireworks (Background)
+	state.fireworks.forEach(f => renderFirework(f, ctx));
 
-	// Render confetti
-	state.confetti.forEach((confetti) => {
-		renderConfetti(confetti, ctx);
-	});
+	// 2. Balloons (Midground)
+	state.balloons.forEach(b => renderBalloon(b, ctx));
+
+	// 3. Confetti (Foreground)
+	state.confetti.forEach(c => renderConfetti(c, ctx));
 }
 
-function renderConfetti(confetti: Confetti, ctx: CanvasRenderingContext2D): void {
+function renderBalloon(b: Balloon, ctx: CanvasRenderingContext2D) {
 	ctx.save();
-	ctx.translate(confetti.x, confetti.y);
-	ctx.rotate((confetti.rotation * Math.PI) / 180);
-	ctx.fillStyle = confetti.color;
+	ctx.translate(b.x, b.y);
 
-	switch (confetti.shape) {
-		case 'rect':
-			ctx.fillRect(-confetti.size / 2, -confetti.size / 4, confetti.size, confetti.size / 2);
-			break;
+	// String
+	ctx.beginPath();
+	ctx.moveTo(0, 30);
+	ctx.quadraticCurveTo(
+		Math.sin(b.wobble * 2) * 5,
+		30 + b.stringLength / 2,
+		Math.sin(b.wobble) * 10,
+		30 + b.stringLength
+	);
+	ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+	ctx.lineWidth = 1;
+	ctx.stroke();
 
-		case 'circle':
-			ctx.beginPath();
-			ctx.arc(0, 0, confetti.size / 3, 0, Math.PI * 2);
-			ctx.fill();
-			break;
+	// Balloon body
+	ctx.fillStyle = b.color;
+	ctx.beginPath();
+	// Egg shape
+	ctx.ellipse(0, 0, 20, 26, Math.sin(b.wobble * 0.5) * 0.1, 0, Math.PI * 2);
+	ctx.fill();
 
-		case 'serpentine':
-			// Curvy ribbon
-			ctx.lineWidth = confetti.size / 4;
-			ctx.strokeStyle = confetti.color;
-			ctx.lineCap = 'round';
-			ctx.beginPath();
-			ctx.moveTo(-confetti.size, 0);
-			ctx.quadraticCurveTo(-confetti.size / 2, -confetti.size / 2, 0, 0);
-			ctx.quadraticCurveTo(confetti.size / 2, confetti.size / 2, confetti.size, 0);
-			ctx.stroke();
-			break;
-	}
+	// Shine
+	ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+	ctx.beginPath();
+	ctx.ellipse(-8, -8, 4, 8, -0.5, 0, Math.PI * 2);
+	ctx.fill();
+
+	// Knot
+	ctx.fillStyle = b.color;
+	ctx.beginPath();
+	ctx.moveTo(-4, 25);
+	ctx.lineTo(4, 25);
+	ctx.lineTo(0, 30);
+	ctx.fill();
 
 	ctx.restore();
 }
 
-function renderFirework(firework: Firework, ctx: CanvasRenderingContext2D): void {
-	if (!firework.exploded) {
-		// Draw rising trail
-		const gradient = ctx.createLinearGradient(firework.x, firework.y, firework.x, firework.y + 30);
-		gradient.addColorStop(0, firework.color);
-		gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-		ctx.strokeStyle = gradient;
-		ctx.lineWidth = 3;
-		ctx.lineCap = 'round';
-
-		ctx.beginPath();
-		ctx.moveTo(firework.x, firework.y);
-		ctx.lineTo(firework.x, firework.y + 30);
-		ctx.stroke();
-
-		// Bright head
-		ctx.fillStyle = '#ffffff';
-		ctx.beginPath();
-		ctx.arc(firework.x, firework.y, 3, 0, Math.PI * 2);
-		ctx.fill();
-	} else {
-		// Draw explosion particles
-		firework.particles.forEach((particle) => {
-			ctx.save();
-			ctx.globalAlpha = clamp(particle.opacity, 0, 1);
-
-			// Particle with glow
-			const gradient = ctx.createRadialGradient(
-				particle.x,
-				particle.y,
-				0,
-				particle.x,
-				particle.y,
-				8
-			);
-			gradient.addColorStop(0, '#ffffff');
-			gradient.addColorStop(0.3, particle.color);
-			gradient.addColorStop(1, `${particle.color}00`);
-
-			ctx.fillStyle = gradient;
+function renderFirework(f: Firework, ctx: CanvasRenderingContext2D) {
+	// Trail
+	if (!f.exploded) {
+		f.trail.forEach(t => {
 			ctx.beginPath();
-			ctx.arc(particle.x, particle.y, 8, 0, Math.PI * 2);
+			ctx.arc(t.x, t.y, 2, 0, Math.PI * 2);
+			ctx.fillStyle = `rgba(255, 255, 255, ${t.opacity})`;
+			ctx.fill();
+		});
+		// Head
+		ctx.beginPath();
+		ctx.arc(f.x, f.y, 3, 0, Math.PI * 2);
+		ctx.fillStyle = '#FFF';
+		ctx.fill();
+	}
+	// Particles
+	else {
+		f.particles.forEach(p => {
+			ctx.globalAlpha = p.opacity;
+			ctx.fillStyle = p.color;
+			ctx.beginPath();
+			ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
 			ctx.fill();
 
-			ctx.restore();
+			// Glow
+			ctx.shadowBlur = 10;
+			ctx.shadowColor = p.color;
+			ctx.globalAlpha = 1;
+			ctx.shadowBlur = 0;
 		});
 	}
 }
 
-// -----------------------------------------------------------------------------
-// Birthday Background Gradient (animated)
-// -----------------------------------------------------------------------------
+function renderConfetti(c: Confetti, ctx: CanvasRenderingContext2D) {
+	ctx.save();
+	ctx.translate(c.x, c.y);
+	ctx.rotate((c.rotation * Math.PI) / 180);
+	ctx.fillStyle = c.color;
 
-export function getBirthdayGradientCSS(timestamp: number): string {
-	const colors = BIRTHDAY_CONFIG.BG_GRADIENT_COLORS;
-	const cycleTime = 10000; // 10 seconds per full cycle
-	const progress = (timestamp % cycleTime) / cycleTime;
-
-	// Rotate through colors
-	const offset = Math.floor(progress * colors.length);
-	const color1 = colors[offset % colors.length];
-	const color2 = colors[(offset + 1) % colors.length];
-	const color3 = colors[(offset + 2) % colors.length];
-	const color4 = colors[(offset + 3) % colors.length];
-
-	return `linear-gradient(135deg, ${color1} 0%, ${color2} 33%, ${color3} 66%, ${color4} 100%)`;
+	if (c.shape === 'rect') ctx.fillRect(-c.size / 2, -c.size / 4, c.size, c.size / 2);
+	else if (c.shape === 'circle') {
+		ctx.beginPath(); ctx.arc(0, 0, c.size / 3, 0, Math.PI * 2); ctx.fill();
+	}
+	else if (c.shape === 'serpentine') {
+		ctx.lineWidth = c.size / 4; ctx.strokeStyle = c.color; ctx.lineCap = 'round';
+		ctx.beginPath();
+		ctx.moveTo(-c.size, 0);
+		ctx.quadraticCurveTo(0, -c.size / 2, c.size, 0);
+		ctx.stroke();
+	}
+	ctx.restore();
 }
 
 // -----------------------------------------------------------------------------
@@ -346,5 +350,16 @@ export const birthdaySystem = {
 	init: initBirthdaySystem,
 	update: updateBirthdaySystem,
 	render: renderBirthdaySystem,
+	spawnInteractionFirework, // Export interaction
 	getGradientCSS: getBirthdayGradientCSS
 };
+
+export function getBirthdayGradientCSS(t: number): string {
+	const colors = BIRTHDAY_CONFIG.BG_GRADIENT_COLORS;
+	const cycle = 15000;
+	const progress = (t % cycle) / cycle;
+	const i = Math.floor(progress * colors.length);
+	const c1 = colors[i];
+	const c2 = colors[(i + 1) % colors.length];
+	return `linear-gradient(135deg, ${c1}, ${c2})`;
+}

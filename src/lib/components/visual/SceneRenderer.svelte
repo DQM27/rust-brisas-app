@@ -317,6 +317,14 @@
 			}
 		}
 	});
+	function handleCanvasClick(event: MouseEvent) {
+		if (isBirthday && birthdayState && canvas) {
+			const rect = canvas.getBoundingClientRect();
+			const x = event.clientX - rect.left;
+			const y = event.clientY - rect.top;
+			birthdayState = birthdaySystem.spawnInteractionFirework(birthdayState, x, y);
+		}
+	}
 </script>
 
 <!-- Background gradient (CSS for performance) -->
@@ -326,17 +334,21 @@
 ></div>
 
 <!-- Canvas for all animated elements -->
-<canvas bind:this={canvas} class="absolute inset-0 w-full h-full" style="z-index: 1;"></canvas>
+<!-- Pointer events enabled ONLY for birthday mode to allow clicking -->
+<canvas
+	bind:this={canvas}
+	class="absolute inset-0 w-full h-full"
+	style="z-index: 1; pointer-events: {isBirthday ? 'auto' : 'none'};"
+	onclick={handleCanvasClick}
+></canvas>
 
 <!-- Slot for MountainLandscape SVG (rendered on top of canvas sky) -->
-<div class="absolute inset-0" style="z-index: 2;">
+<div class="absolute inset-0 pointer-events-none" style="z-index: 2;">
 	{#if children}
 		{@render children()}
 	{/if}
 </div>
 
 <style>
-	canvas {
-		pointer-events: none;
-	}
+	/* Canvas pointer events controlled inline now */
 </style>

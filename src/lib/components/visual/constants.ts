@@ -173,62 +173,62 @@ export const CELESTIAL_CONFIG = {
 // -----------------------------------------------------------------------------
 
 export const PARTICLE_CONFIGS: Record<Season, ParticleConfig & { nightVariant?: ParticleConfig }> =
-	{
-		winter: {
-			count: 80,
-			colors: ['#ffffff', '#e8f4ff', '#d0e8ff'],
-			sizeRange: [3, 7],
-			speedRange: [0.5, 1.5],
-			rotates: false,
-			glows: false
-		},
+{
+	winter: {
+		count: 80,
+		colors: ['#ffffff', '#e8f4ff', '#d0e8ff'],
+		sizeRange: [3, 7],
+		speedRange: [0.5, 1.5],
+		rotates: false,
+		glows: false
+	},
 
-		spring: {
+	spring: {
+		count: 40,
+		colors: ['#ffb7c5', '#ffc0cb', '#ffe4e8', '#ffffff'],
+		sizeRange: [6, 12],
+		speedRange: [0.3, 0.8],
+		rotates: true,
+		glows: false
+	},
+
+	summer: {
+		// Day - pollen/dust/dandelions
+		count: 60,
+		colors: ['#fffdd0', '#fff8c0', '#ffffff', '#fffaf0'], // Cream/White mix
+		sizeRange: [2, 5],
+		speedRange: [0.3, 1.0], // Slower, more drifting
+		rotates: true, // Some might be dandelions
+		glows: false,
+		// Night - fireflies
+		nightVariant: {
 			count: 40,
-			colors: ['#ffb7c5', '#ffc0cb', '#ffe4e8', '#ffffff'],
-			sizeRange: [6, 12],
-			speedRange: [0.3, 0.8],
-			rotates: true,
-			glows: false
-		},
-
-		summer: {
-			// Day - pollen/dust/dandelions
-			count: 60,
-			colors: ['#fffdd0', '#fff8c0', '#ffffff', '#fffaf0'], // Cream/White mix
-			sizeRange: [2, 5],
-			speedRange: [0.3, 1.0], // Slower, more drifting
-			rotates: true, // Some might be dandelions
-			glows: false,
-			// Night - fireflies
-			nightVariant: {
-				count: 40,
-				colors: ['#ffff88', '#ccffcc', '#ffffff', '#e0ffe0', '#ffffe0'], // Yellow, Green, White mix
-				sizeRange: [2, 4],
-				speedRange: [0.5, 2.0], // Erratic movement
-				rotates: false,
-				glows: true
-			}
-		},
-
-		autumn: {
-			count: 50,
-			colors: ['#d4855a', '#c06a3a', '#9a4a2a', '#e8b88a'],
-			sizeRange: [6, 12],
-			speedRange: [1.0, 3.0],
-			rotates: true,
-			glows: false
-		},
-
-		rain: {
-			count: 300,
-			colors: ['#a0c0ff', '#80a0e0', '#6080c0'],
-			sizeRange: [2, 4], // Using "size" for length/width ratio
-			speedRange: [15, 25], // Falling fast
+			colors: ['#ffff88', '#ccffcc', '#ffffff', '#e0ffe0', '#ffffe0'], // Yellow, Green, White mix
+			sizeRange: [2, 4],
+			speedRange: [0.5, 2.0], // Erratic movement
 			rotates: false,
-			glows: false
+			glows: true
 		}
-	};
+	},
+
+	autumn: {
+		count: 50,
+		colors: ['#d4855a', '#c06a3a', '#9a4a2a', '#e8b88a'],
+		sizeRange: [6, 12],
+		speedRange: [1.0, 3.0],
+		rotates: true,
+		glows: false
+	},
+
+	rain: {
+		count: 300,
+		colors: ['#a0c0ff', '#80a0e0', '#6080c0'],
+		sizeRange: [2, 4], // Using "size" for length/width ratio
+		speedRange: [15, 25], // Falling fast
+		rotates: false,
+		glows: false
+	}
+};
 
 // -----------------------------------------------------------------------------
 // Wind Configuration
@@ -249,34 +249,34 @@ export const WIND_CONFIG = {
 
 export const BIRTHDAY_CONFIG = {
 	// Confetti
-	CONFETTI_COUNT: 120,
+	CONFETTI_COUNT: 150, // Increased
 	CONFETTI_COLORS: [
-		'#ff6b6b',
-		'#ffd93d',
-		'#6bcb77',
-		'#4d96ff',
-		'#ff6bff',
-		'#ffa500',
-		'#00ff88',
-		'#ff1493'
+		'#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#9D4EDD',
+		'#FF9F1C', '#2EC4B6', '#E71D36', '#F72585', '#4CC9F0'
+	], // More vibrant
+	CONFETTI_SIZE_RANGE: [6, 14] as [number, number],
+
+	// Balloons
+	BALLOON_COUNT_LIMIT: 15,
+	BALLOON_INTERVAL: [2000, 5000] as [number, number],
+	BALLOON_COLORS: [
+		'#FF6B6B', '#4D96FF', '#FFD93D', '#6BCB77', '#9D4EDD', '#F72585'
 	],
-	CONFETTI_SIZE_RANGE: [6, 12] as [number, number],
+	BALLOON_SPEED_RANGE: [0.5, 1.5] as [number, number],
 
 	// Fireworks
-	FIREWORK_INTERVAL: [3000, 6000] as [number, number],
-	FIREWORK_COLORS: ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6bff'],
-	FIREWORK_PARTICLE_COUNT: 30,
+	FIREWORK_INTERVAL: [2500, 5500] as [number, number],
+	FIREWORK_COLORS: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF'],
+	FIREWORK_PARTICLE_COUNT: 50,
+	FIREWORK_TRAIL_LENGTH: 10,
 
-	// Background gradient (animated)
+	// Background gradient (animated - deeper & richer)
 	BG_GRADIENT_COLORS: [
-		'#667eea',
-		'#764ba2',
-		'#f093fb',
-		'#f5576c',
-		'#4facfe',
-		'#00f2fe',
-		'#43e97b',
-		'#38f9d7'
+		'#240b36', // Deep Purple
+		'#c31432', // Rich Red
+		'#0f0c29', // Midnight
+		'#302b63', // Deep Blue
+		'#24243e'  // Slate
 	]
 };
 
@@ -315,10 +315,10 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
 	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 	return result
 		? {
-				r: parseInt(result[1], 16),
-				g: parseInt(result[2], 16),
-				b: parseInt(result[3], 16)
-			}
+			r: parseInt(result[1], 16),
+			g: parseInt(result[2], 16),
+			b: parseInt(result[3], 16)
+		}
 		: { r: 0, g: 0, b: 0 };
 }
 

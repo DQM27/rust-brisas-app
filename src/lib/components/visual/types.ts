@@ -217,6 +217,19 @@ export interface Confetti {
 	wobbleSpeed: number;
 }
 
+
+export interface Balloon {
+	x: number;
+	y: number;
+	vx: number;
+	vy: number;
+	color: string;
+	stringLength: number;
+	wobble: number;
+	wobbleSpeed: number;
+	seed: number; // for consistent styling
+}
+
 export interface Firework {
 	x: number;
 	y: number;
@@ -225,6 +238,13 @@ export interface Firework {
 	color: string;
 	exploded: boolean;
 	particles: FireworkParticle[];
+	trail: Point[]; // New: trail effect
+}
+
+export interface Point {
+	x: number;
+	y: number;
+	opacity: number;
 }
 
 export interface FireworkParticle {
@@ -234,12 +254,15 @@ export interface FireworkParticle {
 	vy: number;
 	opacity: number;
 	color: string;
+	decay: number; // New: individual decay rate
 }
 
 export interface BirthdaySystemState {
 	confetti: Confetti[];
+	balloons: Balloon[]; // New
 	fireworks: Firework[];
 	nextFireworkTimer: number;
+	nextBalloonTimer: number; // New
 }
 
 // -----------------------------------------------------------------------------
