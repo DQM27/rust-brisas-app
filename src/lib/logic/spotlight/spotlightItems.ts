@@ -457,30 +457,8 @@ export async function searchDeep(
 								}
 							});
 						});
-					} else if (res.tipo === 'contratista') {
-						openTab({
-							componentKey: 'contratista-list',
-							title: 'Lista Contratistas',
-							id: 'contratista-list',
-							focusOnOpen: true,
-							data: { openDetailId: res.id }
-						});
-					} else if (res.tipo === 'proveedor') {
-						openTab({
-							componentKey: 'proveedor-list',
-							title: 'Lista Proveedores',
-							id: 'proveedor-list',
-							focusOnOpen: true,
-							data: { openDetailId: res.id }
-						});
-					} else if (res.tipo === 'visitante' || res.tipo === 'visita') {
-						openTab({
-							componentKey: 'visitante-list',
-							title: 'Lista Visitantes',
-							id: 'visitante-list',
-							focusOnOpen: true,
-							data: { openDetailId: res.id }
-						});
+					} else if (['contratista', 'proveedor', 'visitante', 'visita'].includes(res.tipo)) {
+						personaQuickView.set({ id: res.id, type: res.tipo });
 					}
 					onClose();
 				}
