@@ -16,7 +16,7 @@
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/api/auth';
 	import { currentUser } from '$lib/stores/auth';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import ChangePasswordPanel from '$lib/components/ChangePasswordPanel.svelte';
 
 	import * as roleService from '$lib/logic/role/roleService';
@@ -84,7 +84,7 @@
 
 			if (selected && typeof selected === 'string') {
 				avatarLoading = true;
-				const toastId = toast.loading('Encriptando y subiendo a Bóveda...');
+				const toastId = toastService.loading('Encriptando y subiendo a Bóveda...');
 
 				const result = await userService.uploadUserAvatar(user.id, selected);
 
@@ -92,12 +92,12 @@
 					throw new Error(result.error);
 				}
 
-				toast.success('Foto blindada exitosamente', { id: toastId });
+				toastService.success('Foto blindada exitosamente', { id: toastId });
 				await loadAvatar(user.id);
 			}
 		} catch (e) {
 			console.error(e);
-			toast.error('Error al subir imagen');
+			toastService.error('Error al subir imagen');
 		} finally {
 			avatarLoading = false;
 		}
@@ -457,11 +457,11 @@
 		showAdminConfirm = false;
 
 		if (!$currentUser?.email) {
-			toast.error('Error de sesión');
+			toastService.error('Error de sesión');
 			return;
 		}
 
-		const toastId = toast.loading('Verificando permisos...');
+		const toastId = toastService.loading('Verificando permisos...');
 		try {
 			// 1. Verify Admin Password
 			await auth.login($currentUser.email, adminPass);
@@ -482,17 +482,17 @@
 			generatedPassword = newPass;
 			showSuccessModal = true;
 
-			toast.success('Contraseña restablecida', { id: toastId });
+			toastService.success('Contraseña restablecida', { id: toastId });
 		} catch (err) {
 			console.error(err);
-			toast.error('Contraseña de administrador incorrecta', { id: toastId });
+			toastService.error('Contraseña de administrador incorrecta', { id: toastId });
 		}
 	}
 
 	function copyNewPassword() {
 		if (generatedPassword) {
 			navigator.clipboard.writeText(generatedPassword);
-			toast.success('Copiado al portapapeles');
+			toastService.success('Copiado al portapapeles');
 		}
 	}
 

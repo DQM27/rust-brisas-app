@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { generalSettings } from '$lib/stores/settingsStore';
 	import { scale } from 'svelte/transition';
-	import { Check, X, Power, Volume2, Music, Upload } from 'lucide-svelte';
+	import { Check, X, Power, Volume2, Music, Upload, Bell, BellOff } from 'lucide-svelte';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { onMount } from 'svelte';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { can } from '$lib/logic/permissions';
 	import { currentUser } from '$lib/stores/auth';
 	import { configService } from '$lib/logic/system/configService';
@@ -34,25 +34,25 @@
 	async function saveAudioConfig() {
 		const res = await configService.updateAudioConfig(alertSound);
 		if (res.ok) {
-			toast.success('Sonido de sistema actualizado', { icon: '🔔' });
+			toastService.success('Sonido de sistema actualizado', { icon: '🔔' });
 		} else {
 			console.error('Error saving audio config:', res.error);
-			toast.error('Error al guardar configuración de audio');
+			toastService.error('Error al guardar configuración de audio');
 		}
 	}
 
 	async function toggleCustomSound() {
 		if (useCustomSound && !customSoundPath) {
-			toast.error('Primero selecciona un archivo de sonido');
+			toastService.error('Primero selecciona un archivo de sonido');
 			useCustomSound = false;
 			return;
 		}
 		const res = await configService.setUseCustomSound(useCustomSound);
 		if (res.ok) {
-			toast.success(useCustomSound ? 'Usando sonido personalizado' : 'Usando sonido nativo');
+			toastService.success(useCustomSound ? 'Usando sonido personalizado' : 'Usando sonido nativo');
 		} else {
 			console.error('Error toggling custom sound:', res.error);
-			toast.error('Error al cambiar tipo de sonido');
+			toastService.error('Error al cambiar tipo de sonido');
 		}
 	}
 
@@ -74,14 +74,14 @@
 				if (res.ok) {
 					customSoundPath = res.data;
 					useCustomSound = true;
-					toast.success('Sonido personalizado cargado correctamente');
+					toastService.success('Sonido personalizado cargado correctamente');
 				} else {
-					toast.error(`Error: ${res.error}`);
+					toastService.error(`Error: ${res.error}`);
 				}
 			}
 		} catch (e) {
 			console.error('Error picking sound:', e);
-			toast.error('Error al cargar sonido');
+			toastService.error('Error al cargar sonido');
 		} finally {
 			uploadingSound = false;
 		}
@@ -91,7 +91,7 @@
 		const res = await configService.playAlertSound();
 		if (!res.ok) {
 			console.error('Error playing test sound:', res.error);
-			toast.error('No se pudo reproducir el sonido de prueba');
+			toastService.error('No se pudo reproducir el sonido de prueba');
 		}
 	}
 
@@ -277,6 +277,44 @@
 						</div>
 					</div>
 				</div>
+			</div>
+		</div>
+
+		<!-- ================================================================== -->
+		<!-- NOTIFICATIONS CARD -->
+		<!-- ================================================================== -->
+		<div class="card-base p-5">
+			<div class="flex items-center gap-4 mb-4">
+				<div
+					class="p-3 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+				>
+					<Bell size={22} />
+				</div>
+				<div>
+					<h3 class="text-lg font-semibold text-primary">Notificaciones</h3>
+					<p class="text-sm text-secondary">Controla los avisos visuales y sonoros.</p>
+				</div>
+			</div>
+
+			<div class="divide-y divide-emphasis">
+				{@render settingRow(
+					$generalSettings.showToasts ? Bell : BellOff,
+					'bg-blue-50 dark:bg-blue-900/20',
+					'text-blue-500',
+					'Activar Notificaciones Visuales',
+					$generalSettings.showToasts,
+					() => generalSettings.toggleToasts(),
+					!canUpdate
+				)}
+				{@render settingRow(
+					Volume2,
+					'bg-orange-50 dark:bg-orange-900/20',
+					'text-orange-500',
+					'Activar Sonidos de Alerta',
+					$generalSettings.enableNotificationSounds,
+					() => generalSettings.toggleNotificationSounds(),
+					!canUpdate
+				)}
 			</div>
 		</div>
 

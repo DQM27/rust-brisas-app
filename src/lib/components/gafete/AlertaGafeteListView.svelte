@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { AlertCircle, History, CheckCircle, Search, Filter } from 'lucide-svelte';
 	import { shortcutRegistry, setActiveContext } from '$lib/shortcuts';
 	import type { AlertaGafeteResponse } from '$lib/types/ingreso';
@@ -43,7 +43,7 @@
 				if (gridWrapper) gridWrapper.replaceData(alerts);
 			} else {
 				error = res.error;
-				toast.error(res.error);
+				toastService.error(res.error);
 			}
 		} finally {
 			loading = false;
@@ -63,12 +63,12 @@
 		try {
 			const res = await resolverAlerta(selectedAlerta.id, notas);
 			if (res.ok) {
-				toast.success('Alerta resuelta correctamente');
+				toastService.success('Alerta resuelta correctamente');
 				showResolveModal = false;
 				selectedAlerta = null;
 				loadAlerts();
 			} else {
-				toast.error(res.error);
+				toastService.error(res.error);
 			}
 		} finally {
 			loading = false;

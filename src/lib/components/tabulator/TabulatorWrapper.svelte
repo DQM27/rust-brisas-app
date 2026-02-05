@@ -5,7 +5,7 @@
 		type ColumnDefinition,
 		type Options
 	} from 'tabulator-tables';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import {
 		createTabulatorController,
 		defaultTabulatorOptions
@@ -240,7 +240,7 @@
 		if (table) {
 			const cols = table.getColumnDefinitions().map((col: any) => ({ ...col, width: undefined }));
 			table.setColumns(cols);
-			toast.success('Columnas ajustadas al contenido');
+			toastService.success('Columnas ajustadas al contenido');
 		}
 	}
 
@@ -257,7 +257,7 @@
 				width: index === columns.length - 1 ? columnWidth + remainder : columnWidth
 			}));
 			table.setColumns(cols);
-			toast.success('Columnas ajustadas al ancho');
+			toastService.success('Columnas ajustadas al ancho');
 		}
 	}
 

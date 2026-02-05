@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { fade, scale, slide } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { X, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-svelte';
 	import { shortcutRegistry, shortcutCommand } from '$lib/shortcuts';
 	import { onMount } from 'svelte';
@@ -113,11 +113,11 @@
 
 			if (!validationResult.puedeIngresar) {
 				invoke('play_alert_sound');
-				toast.error(validationResult.motivoRechazo || 'Proveedor no autorizado');
+				toastService.error(validationResult.motivoRechazo || 'Proveedor no autorizado');
 			}
 		} catch (e: unknown) {
 			const msg = e instanceof Error ? e.message : String(e);
-			toast.error('Error al validar proveedor: ' + msg);
+			toastService.error('Error al validar proveedor: ' + msg);
 			validationResult = null;
 		} finally {
 			loading = false;
@@ -132,7 +132,7 @@
 		// Validar campos requeridos
 		if (!areaVisitada.trim() || !motivo.trim()) {
 			submitted = true;
-			toast.error('Por favor complete los campos requeridos');
+			toastService.error('Por favor complete los campos requeridos');
 			return;
 		}
 
@@ -162,13 +162,13 @@
 				$currentUser?.id || ''
 			);
 
-			toast.success('Ingreso de proveedor registrado');
+			toastService.success('Ingreso de proveedor registrado');
 			dispatch('complete');
 			handleClose();
 		} catch (e: unknown) {
 			console.error(e);
 			const msg = e instanceof Error ? e.message : String(e);
-			toast.error('Error al registrar: ' + msg);
+			toastService.error('Error al registrar: ' + msg);
 		} finally {
 			loading = false;
 		}

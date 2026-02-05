@@ -16,7 +16,7 @@
 
 	import { auth } from '$lib/api/auth';
 	import { login, logout, currentUser } from '$lib/stores/auth';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 
 	// Types
 	interface UserSearchResult {
@@ -143,7 +143,7 @@
 			await logout('Logout (Quick Switch)');
 			const userResponse = await auth.login(selectedUser.email, password);
 			login(userResponse, 'Quick Switch Login');
-			toast.success(`Sesión cambiada a ${userResponse.nombre}`);
+			toastService.success(`Sesión cambiada a ${userResponse.nombre}`);
 			handleClose();
 		} catch (err: any) {
 			console.error('Switch user failed:', err);

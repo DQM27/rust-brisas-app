@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { fade, scale, slide } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { X, ChevronDown, ChevronRight, Car, FileText, AlertTriangle } from 'lucide-svelte';
 	import { shortcutRegistry } from '$lib/shortcuts';
 
@@ -122,7 +122,7 @@
 
 		// Solo contratistas por ahora
 		if (type !== 'contratista') {
-			toast.error('Por ahora solo se permiten contratistas');
+			toastService.error('Por ahora solo se permiten contratistas');
 			return;
 		}
 
@@ -149,13 +149,11 @@
 			}
 
 			if (!validationResult.puedeIngresar) {
-				// Trigger native alert sound
-				invoke('play_alert_sound');
-				toast.error(validationResult.motivoRechazo || 'Contratista no autorizado');
+				toastService.error(validationResult.motivoRechazo || 'Contratista no autorizado');
 			}
 		} catch (e: unknown) {
 			const msg = e instanceof Error ? e.message : String(e);
-			toast.error('Error al validar: ' + msg);
+			toastService.error('Error al validar: ' + msg);
 			validationResult = null;
 		} finally {
 			loading = false;
@@ -164,12 +162,12 @@
 
 	async function handleSubmit() {
 		if (!selectedPerson || !validationResult) {
-			toast.error('Complete todos los campos requeridos');
+			toastService.error('Complete todos los campos requeridos');
 			return;
 		}
 
 		if (!validationResult.puedeIngresar) {
-			toast.error('Esta persona no está autorizada para ingresar');
+			toastService.error('Esta persona no está autorizada para ingresar');
 			return;
 		}
 
@@ -182,7 +180,7 @@
 			const usuarioIdStr = stringifyRecordId($currentUser?.id);
 
 			if (!usuarioIdStr) {
-				toast.error(
+				toastService.error(
 					'No se pudo identificar su sesión de usuario. Por favor reintente o refresque la página.'
 				);
 				loading = false;
@@ -204,7 +202,7 @@
 				usuarioIdStr
 			);
 
-			toast.success('¡Ingreso registrado exitosamente!');
+			toastService.success('¡Ingreso registrado exitosamente!');
 			dispatch('complete');
 			reset(); // Limpiar inmediatamente tras éxito
 			handleClose();
@@ -233,7 +231,7 @@
 				errorMsg = e.message;
 			}
 
-			toast.error(errorMsg);
+			toastService.error(errorMsg);
 		} finally {
 			loading = false;
 		}

@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { toast } from 'svelte-5-french-toast';
+import { toastService } from '$lib/services/toastService';
 import { modulesApi } from '$lib/api/modules';
 import type { ModuleStatus, ModuleStatusType } from '$lib/types/modules';
 
@@ -21,7 +21,7 @@ function createModulesStore() {
 				set(map);
 			} catch (error) {
 				console.error('Error cargando módulos:', error);
-				toast.error('Error al cargar configuración de módulos');
+				toastService.error('Error al cargar configuración de módulos');
 			}
 		},
 
@@ -36,11 +36,11 @@ function createModulesStore() {
 					return n;
 				});
 
-				toast.success(`Módulo actualizado a: ${status}`);
+				toastService.success(`Módulo actualizado a: ${status}`);
 				return true;
 			} catch (error) {
 				console.error(`Error actualizando módulo ${key}:`, error);
-				toast.error(String(error), { duration: 4000 }); // Mostrar error del backend (ej. permisos)
+				toastService.error(String(error), { duration: 4000 }); // Mostrar error del backend (ej. permisos)
 				return false;
 			}
 		},

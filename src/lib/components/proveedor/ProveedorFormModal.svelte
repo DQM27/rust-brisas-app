@@ -9,7 +9,7 @@
 		UpdateProveedorInput
 	} from '$lib/types/proveedor';
 	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4 } from 'sveltekit-superforms/adapters';
 	import { shortcutRegistry, shortcutCommand, clearCommand } from '$lib/shortcuts';
@@ -157,7 +157,7 @@
 		try {
 			const result = await submitCreateEmpresa(nuevaEmpresaNombre);
 			if (result.ok) {
-				toast.success(`Empresa "${result.empresa.nombre}" creada exitosamente`);
+				toastService.success(`Empresa "${result.empresa.nombre}" creada exitosamente`);
 				// Agregar la nueva empresa a la lista y cerrar modal
 				// Agregar la nueva empresa a la lista y cerrar modal
 				empresaStore.add(result.empresa);

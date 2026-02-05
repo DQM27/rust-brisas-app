@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import {
 		AlertCircle,
 		Database,
@@ -109,13 +109,13 @@
 	// HANDLERS - BACKUP
 	// ==========================================
 	async function handleBackupNow() {
-		const toastId = toast.loading('Creando backup...');
+		const toastId = toastService.loading('Creando backup...');
 		const result = await backupService.runAutoBackup();
 		if (result.ok) {
-			toast.success(`Backup creado: ${result.data}`, { id: toastId });
+			toastService.success(`Backup creado: ${result.data}`, { id: toastId });
 			await loadBackups();
 		} else {
-			toast.error(`Error: ${result.error}`, { id: toastId });
+			toastService.error(`Error: ${result.error}`, { id: toastId });
 		}
 	}
 
@@ -141,7 +141,7 @@
 				});
 				await loadBackups();
 			} else {
-				toast.error(`Error: ${result.error}`);
+				toastService.error(`Error: ${result.error}`);
 			}
 		} catch (error) {
 			console.error('Error in manual backup:', error);
@@ -178,7 +178,7 @@
 				);
 				await relaunch();
 			} else {
-				toast.error(`Error: ${result.error}`);
+				toastService.error(`Error: ${result.error}`);
 			}
 		} catch (error) {
 			console.error('Error restoring from file:', error);
@@ -196,7 +196,7 @@
 
 	async function handlePasswordSubmit() {
 		if (passwordInput.length < 8) {
-			toast.error('La contraseña debe tener al menos 8 caracteres');
+			toastService.error('La contraseña debe tener al menos 8 caracteres');
 			return;
 		}
 
@@ -204,10 +204,10 @@
 
 		if (passwordMode === 'create') {
 			isCreatingPortable = true;
-			const toastId = toast.loading('Creando backup portable...');
+			const toastId = toastService.loading('Creando backup portable...');
 			const result = await backupService.createPortableBackup(passwordInput);
 			if (result.ok) {
-				toast.success(`Backup portable creado: ${result.data}`, { id: toastId });
+				toastService.success(`Backup portable creado: ${result.data}`, { id: toastId });
 				await message(
 					'⚠️ Guarda la contraseña en un lugar seguro.\nSin ella no podrás restaurar este backup.',
 					{
@@ -217,24 +217,24 @@
 				);
 				await loadBackups();
 			} else {
-				toast.error(`Error: ${result.error}`, { id: toastId });
+				toastService.error(`Error: ${result.error}`, { id: toastId });
 			}
 			isCreatingPortable = false;
 		} else if (passwordMode === 'restore' && pendingRestoreEntry) {
-			const toastId = toast.loading('Restaurando backup portable...');
+			const toastId = toastService.loading('Restaurando backup portable...');
 			const result = await backupService.preparePortableRestore(
 				pendingRestoreEntry.nombre,
 				passwordInput
 			);
 			if (result.ok) {
-				toast.success('Restaura preparada', { id: toastId });
+				toastService.success('Restaura preparada', { id: toastId });
 				await message(
 					'El archivo ha sido preparado correctamente. La aplicación se reiniciará ahora.',
 					{ title: 'Reinicio Requerido', kind: 'info' }
 				);
 				await relaunch();
 			} else {
-				toast.error(`Error: ${result.error}`, { id: toastId });
+				toastService.error(`Error: ${result.error}`, { id: toastId });
 			}
 			pendingRestoreEntry = null;
 		}
@@ -287,13 +287,13 @@
 		);
 		if (!confirmed) return;
 
-		const toastId = toast.loading('Eliminando...');
+		const toastId = toastService.loading('Eliminando...');
 		const result = await backupService.deleteBackupFile(entry.nombre);
 		if (result.ok) {
-			toast.success('Backup eliminado', { id: toastId });
+			toastService.success('Backup eliminado', { id: toastId });
 			await loadBackups();
 		} else {
-			toast.error(`Error: ${result.error}`, { id: toastId });
+			toastService.error(`Error: ${result.error}`, { id: toastId });
 		}
 	}
 
@@ -304,7 +304,7 @@
 		);
 		if (!confirmed) return;
 
-		const toastId = toast.loading('Eliminando...');
+		const toastId = toastService.loading('Eliminando...');
 		let errors = 0;
 		for (const entry of selectedRows) {
 			const res = await backupService.deleteBackupFile(entry.nombre);
@@ -312,9 +312,9 @@
 		}
 
 		if (errors === 0) {
-			toast.success('Backups eliminados', { id: toastId });
+			toastService.success('Backups eliminados', { id: toastId });
 		} else {
-			toast.error(`${errors} errores`, { id: toastId });
+			toastService.error(`${errors} errores`, { id: toastId });
 		}
 		await loadBackups();
 	}

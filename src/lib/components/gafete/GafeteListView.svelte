@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { Plus, X, ListPlus, LayoutGrid, AlertCircle } from 'lucide-svelte';
 	import { shortcutRegistry, setActiveContext } from '$lib/shortcuts';
@@ -90,10 +90,10 @@
 			if (result.ok) {
 				gafetes = result.data.gafetes;
 			} else {
-				toast.error(result.error);
+				toastService.error(result.error);
 			}
 		} catch {
-			toast.error('Error inesperado al cargar gafetes');
+			toastService.error('Error inesperado al cargar gafetes');
 		} finally {
 			loading = false;
 		}
@@ -116,10 +116,10 @@
 			const userId = $currentUser?.id;
 			const result = await gafeteService.updateStatus(data.id, newStatus, userId);
 			if (result.ok) {
-				toast.success(`Estado actualizado a ${newStatus}`);
+				toastService.success(`Estado actualizado a ${newStatus}`);
 				await loadGafetes();
 			} else {
-				toast.error(result.error);
+				toastService.error(result.error);
 			}
 		} finally {
 			loading = false;
@@ -135,12 +135,12 @@
 			$currentUser?.id
 		);
 		if (result.ok) {
-			toast.success('Alerta resuelta');
+			toastService.success('Alerta resuelta');
 			showResolveModal = false;
 			selectedAlertGafete = null;
 			loadGafetes();
 		} else {
-			toast.error(result.error);
+			toastService.error(result.error);
 		}
 		formLoading = false;
 	}
@@ -153,10 +153,10 @@
 			$currentUser?.id
 		);
 		if (result.ok) {
-			toast.success('Gafete eliminado');
+			toastService.success('Gafete eliminado');
 			loadGafetes();
 		} else {
-			toast.error(result.error);
+			toastService.error(result.error);
 		}
 	}
 
@@ -165,11 +165,11 @@
 		const result = await gafeteService.create(data);
 
 		if (result.ok) {
-			toast.success('Gafete creado');
+			toastService.success('Gafete creado');
 			showModal = false;
 			loadGafetes();
 		} else {
-			toast.error(result.error);
+			toastService.error(result.error);
 		}
 		formLoading = false;
 	}
@@ -178,11 +178,11 @@
 		formLoading = true;
 		const result = await gafeteService.createRange(data);
 		if (result.ok) {
-			toast.success(`${result.data.length} gafetes generados`);
+			toastService.success(`${result.data.length} gafetes generados`);
 			showBulkModal = false;
 			loadGafetes();
 		} else {
-			toast.error(result.error);
+			toastService.error(result.error);
 		}
 		formLoading = false;
 	}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { fade, fly, slide } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import {
 		X,
 		ChevronDown,
@@ -112,7 +112,7 @@
 			onUpdate: async ({ form: f }) => {
 				if (f.valid) {
 					if (validationResult && !validationResult.puedeIngresar) {
-						toast.error('Acceso restringido para esta persona');
+						toastService.error('Acceso restringido para esta persona');
 						return;
 					}
 
@@ -152,13 +152,13 @@
 						});
 
 						loading = false;
-						toast.success('Ingreso de visita registrado');
+						toastService.success('Ingreso de visita registrado');
 						handleClose();
 						if (onComplete) onComplete();
 					} catch (e: any) {
 						console.error(e);
 						loading = false;
-						toast.error('Error al registrar: ' + (e.message || String(e)));
+						toastService.error('Error al registrar: ' + (e.message || String(e)));
 					}
 				}
 			}
@@ -324,7 +324,7 @@
 						if (matched) $form.empresaId = matched.id;
 					}
 
-					toast.success('📅 Cita encontrada: Datos cargados');
+					toastService.success('📅 Cita encontrada: Datos cargados');
 				} else {
 					// 2. Si no hay cita, buscar en historial (Catálogo)
 					foundPreRegistroId = undefined;
@@ -343,7 +343,7 @@
 							);
 							if (matched) $form.empresaId = matched.id;
 						}
-						toast.success('Visitante encontrado en historial');
+						toastService.success('Visitante encontrado en historial');
 					}
 				}
 
@@ -373,7 +373,7 @@
 			validationResult = await ingresoVisitaService.validarIngreso(ced);
 			if (validationResult && !validationResult.puedeIngresar) {
 				invoke('play_alert_sound');
-				toast.error(validationResult.motivoRechazo || 'Persona no autorizada');
+				toastService.error(validationResult.motivoRechazo || 'Persona no autorizada');
 			}
 		} catch (e) {
 			validationResult = { puedeIngresar: true };
@@ -394,7 +394,7 @@
 			nuevaEmpresaNombre = ''; // Reset
 		} else if (!res.ok) {
 			console.error('Error creando empresa:', res.error);
-			toast.error('Error creando empresa');
+			toastService.error('Error creando empresa');
 		}
 		creatingEmpresa = false;
 	}
@@ -1217,7 +1217,7 @@
 						$form.placaVehiculo = vehiculoPlaca;
 						$form.modoIngreso = 'vehiculo';
 						showVehiculoForm = false;
-						toast.success('Vehículo asignado a este ingreso');
+						toastService.success('Vehículo asignado a este ingreso');
 					}}
 					class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-blue-500 hover:text-blue-500"
 				>

@@ -2,7 +2,7 @@
 import { writable } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
 import type { ExportProfile } from '$lib/types/exportProfile';
-import { toast } from 'svelte-5-french-toast';
+import { toastService } from '$lib/services/toastService';
 
 function createExportProfileStore() {
 	const { subscribe, update } = writable<{
@@ -30,21 +30,21 @@ function createExportProfileStore() {
 					loading: false,
 					error: (err as Error).message
 				}));
-				toast.error('Error cargando perfiles de exportación');
+				toastService.error('Error cargando perfiles de exportación');
 			}
 		},
 
 		save: async (profile: ExportProfile) => {
 			try {
 				await invoke('save_export_profile', { profile });
-				toast.success('Perfil guardado');
+				toastService.success('Perfil guardado');
 				// Reload to update list
 				const profiles = await invoke<ExportProfile[]>('get_export_profiles');
 				update((s) => ({ ...s, profiles }));
 				return true;
 			} catch (err) {
 				console.error('Error saving export profile:', err);
-				toast.error('Error al guardar perfil: ' + (err as string));
+				toastService.error('Error al guardar perfil: ' + (err as string));
 				return false;
 			}
 		},
@@ -52,7 +52,7 @@ function createExportProfileStore() {
 		delete: async (id: string) => {
 			try {
 				await invoke('delete_export_profile', { id });
-				toast.success('Perfil eliminado');
+				toastService.success('Perfil eliminado');
 				update((s) => ({
 					...s,
 					profiles: s.profiles.filter((p) => p.id !== id)
@@ -60,7 +60,7 @@ function createExportProfileStore() {
 				return true;
 			} catch (err) {
 				console.error('Error deleting export profile:', err);
-				toast.error('Error al eliminar perfil: ' + (err as string));
+				toastService.error('Error al eliminar perfil: ' + (err as string));
 				return false;
 			}
 		},
@@ -68,14 +68,14 @@ function createExportProfileStore() {
 		setDefault: async (id: string) => {
 			try {
 				await invoke('set_default_export_profile', { id });
-				toast.success('Perfil establecido como predeterminado');
+				toastService.success('Perfil establecido como predeterminado');
 				// Reload to update list
 				const profiles = await invoke<ExportProfile[]>('get_export_profiles');
 				update((s) => ({ ...s, profiles }));
 				return true;
 			} catch (err) {
 				console.error('Error setting default export profile:', err);
-				toast.error('Error al establecer perfil predeterminado: ' + (err as string));
+				toastService.error('Error al establecer perfil predeterminado: ' + (err as string));
 				return false;
 			}
 		},

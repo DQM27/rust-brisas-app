@@ -39,7 +39,7 @@
 	// Services
 	import * as userService from '$lib/logic/user/userService';
 	import type { CreateUserInput, UpdateUserInput } from '$lib/types/user';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { reindexGlobalSearch } from '$lib/api/searchService';
 
 	// Sidebar items configuration
@@ -289,15 +289,15 @@
 			const result = await userService.updateUser($currentUser.id, data as UpdateUserInput);
 
 			if (result.ok) {
-				toast.success('Perfil actualizado correctamente');
+				toastService.success('Perfil actualizado correctamente');
 				return true;
 			} else {
-				toast.error(result.error);
+				toastService.error(result.error);
 				return false;
 			}
 		} catch (err) {
 			console.error(err);
-			toast.error('Error al guardar perfil');
+			toastService.error('Error al guardar perfil');
 			return false;
 		} finally {
 			profileLoading = false;
@@ -314,15 +314,15 @@
 
 	async function confirmReindex() {
 		reindexLoading = true;
-		const toastId = toast.loading('Reindexando base de datos...');
+		const toastId = toastService.loading('Reindexando base de datos...');
 
 		try {
 			await reindexGlobalSearch();
-			toast.success('Reindexado completado correctamente', { id: toastId });
+			toastService.success('Reindexado completado correctamente', { id: toastId });
 			showReindexConfirm = false;
 		} catch (e: any) {
 			console.error(e);
-			toast.error(e.message || 'Error al reindexar', { id: toastId });
+			toastService.error(e.message || 'Error al reindexar', { id: toastId });
 		} finally {
 			reindexLoading = false;
 		}

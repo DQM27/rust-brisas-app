@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { Plus, RotateCw, Lock, LockOpen, UserPlus, Pencil, Ban } from 'lucide-svelte';
 
@@ -77,7 +77,7 @@
 		if (result.ok) {
 			bloqueados = result.data.bloqueados;
 		} else {
-			toast.error(result.error);
+			toastService.error(result.error);
 		}
 		loading = false;
 	}
@@ -102,12 +102,12 @@
 		}
 
 		if (result.ok) {
-			toast.success(editingBloqueado ? 'Información actualizada' : 'Persona bloqueada');
+			toastService.success(editingBloqueado ? 'Información actualizada' : 'Persona bloqueada');
 			showFormModal = false;
 			loadListaNegra();
 			return true;
 		} else {
-			toast.error(result.error);
+			toastService.error(result.error);
 			return false;
 		}
 	}
@@ -145,13 +145,13 @@
 				: await listaNegraService.reblock(editingBloqueado.id);
 
 		if (result.ok) {
-			toast.success(
+			toastService.success(
 				confirmActionType === 'unblock' ? 'Persona desbloqueada' : 'Persona re-bloqueada'
 			);
 			showConfirmModal = false;
 			loadListaNegra();
 		} else {
-			toast.error(result.error);
+			toastService.error(result.error);
 		}
 		formLoading = false;
 	}

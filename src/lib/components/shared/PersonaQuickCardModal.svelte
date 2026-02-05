@@ -19,7 +19,7 @@
 	} from 'lucide-svelte';
 	import { personaQuickView } from '$lib/stores/ui';
 	import { openTab } from '$lib/stores/tabs';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { fade, scale, slide } from 'svelte/transition';
 	import { currentUser } from '$lib/stores/auth';
 	import { validarIngreso } from '$lib/logic/ingreso/ingresoService';
@@ -46,7 +46,7 @@
 			validationResult = await validarIngreso(type as any, id);
 		} catch (e) {
 			console.error('Error al cargar datos de persona:', e);
-			toast.error('Error al cargar información detallada');
+			toastService.error('Error al cargar información detallada');
 		} finally {
 			loading = false;
 		}

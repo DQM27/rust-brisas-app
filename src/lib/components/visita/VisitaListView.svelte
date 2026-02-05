@@ -29,7 +29,7 @@
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 	import { createGridBadge } from '$lib/components/tabulator/gridBadge';
 	import type { IngresoVisita } from '$lib/types/ingreso-nuevos';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId, openTab } from '$lib/stores/tabs';
 	import {
@@ -180,7 +180,7 @@
 			}
 		} catch (_e: unknown) {
 			console.error(_e);
-			toast.error('Error cargando visitas');
+			toastService.error('Error cargando visitas');
 		} finally {
 			loading = false;
 		}
@@ -211,19 +211,19 @@
 		try {
 			salidaLoading = true;
 			await ingresoVisitaService.registrarSalida(selectedIngreso.id, devolvioGafete, observaciones);
-			toast.success('Salida registrada');
+			toastService.success('Salida registrada');
 			showSalidaModal = false;
 			selectedIngreso = null;
 			loadData();
 		} catch (e: any) {
-			toast.error('Error: ' + e.message);
+			toastService.error('Error: ' + e.message);
 		} finally {
 			salidaLoading = false;
 		}
 	}
 
 	function handleOpenListado() {
-		toast('Abriendo catálogo de visitantes...');
+		toastService.info('Abriendo catálogo de visitantes...');
 		openTab({
 			componentKey: 'visitante-list',
 			title: 'Catálogo de Visitantes',
@@ -256,16 +256,16 @@
 			if (!table) return;
 
 			const isSelection = selectedRows.length > 0;
-			const toastId = toast.loading(`Exportando ${isSelection ? 'selección' : 'todo'}...`);
+			const toastId = toastService.loading(`Exportando ${isSelection ? 'selección' : 'todo'}...`);
 
 			// Nota: La lógica de exportación puede necesitar adaptación si dependía íntimamente de AG Grid
 			// Pero exportData parece estar diseñado para manejar la abstracción si se le pasan los datos
 			await exportData(table, format, options, isSelection);
 
-			toast.success('Exportación completada', { id: toastId });
+			toastService.success('Exportación completada', { id: toastId });
 			showExportModal = false;
 		} catch (err: any) {
-			toast.error('Error: ' + err.message);
+			toastService.error('Error: ' + err.message);
 		}
 	}
 

@@ -3,7 +3,7 @@
 // ==========================================
 
 import { get } from 'svelte/store';
-import { toast } from 'svelte-5-french-toast';
+import { toastService } from '$lib/services/toastService';
 import { ingresoFormStore } from '$lib/stores/ingresoFormStore';
 import { ingresoStore } from '$lib/stores/ingresoStore';
 import * as ingresoService from './ingresoService';
@@ -46,7 +46,7 @@ export async function buscarYValidarContratista(contratistaId: string): Promise<
 
 	if (!result.ok) {
 		// Error en la validación
-		toast.error(result.error);
+		toastService.error(result.error);
 		limpiarContratista();
 		return false;
 	}
@@ -70,7 +70,7 @@ export async function buscarYValidarContratista(contratistaId: string): Promise<
 
 	// 4. Mostrar alertas si existen
 	if (validacion.alertas && validacion.alertas.length > 0) {
-		toast('Tiene alertas pendientes de gafetes', { icon: '⚠️' });
+		toastService.info('Tiene alertas pendientes de gafetes', { icon: '⚠️' });
 	}
 
 	return true;
@@ -98,7 +98,7 @@ export function cambiarModoIngreso(modo: 'caminando' | 'vehiculo', contratistaDa
 
 	// Si cambia a vehículo pero no tiene vehículos, mostrar error
 	if (modo === 'vehiculo' && !tieneVehiculos) {
-		toast.error('El contratista no tiene vehículos registrados');
+		toastService.error('El contratista no tiene vehículos registrados');
 		return;
 	}
 
@@ -207,7 +207,7 @@ export async function registrarEntrada(
 	});
 
 	if (!validacionFormulario.ok) {
-		toast.error(validacionFormulario.error);
+		toastService.error(validacionFormulario.error);
 		return false;
 	}
 
@@ -219,7 +219,7 @@ export async function registrarEntrada(
 		});
 
 		if (!validacionGafete.ok || !validacionGafete.data.isValid) {
-			toast.error('Número de gafete inválido o no disponible');
+			toastService.error('Número de gafete inválido o no disponible');
 			return false;
 		}
 	}
@@ -233,7 +233,7 @@ export async function registrarEntrada(
 	});
 
 	if (!validacionModo.ok) {
-		toast.error(validacionModo.error);
+		toastService.error(validacionModo.error);
 		return false;
 	}
 
@@ -252,7 +252,7 @@ export async function registrarEntrada(
 	const result = await ingresoService.registrarEntrada(input);
 
 	if (!result.ok) {
-		toast.error(result.error);
+		toastService.error(result.error);
 		return false;
 	}
 
@@ -260,7 +260,7 @@ export async function registrarEntrada(
 	ingresoStore.add(result.data);
 
 	// 7. Mostrar éxito
-	toast.success('Entrada registrada correctamente');
+	toastService.success('Entrada registrada correctamente');
 
 	// 8. Reset del formulario
 	ingresoFormStore.reset();

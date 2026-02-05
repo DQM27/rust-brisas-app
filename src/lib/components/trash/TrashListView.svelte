@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { RotateCcw, AlertCircle } from 'lucide-svelte';
 	import { TabulatorWrapper } from '$lib/components/tabulator';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
@@ -81,18 +81,18 @@
 			if (modalAction === 'restore') {
 				const result = await service.restore(id);
 				if (result.ok) {
-					toast.success(`${entityName} restaurado`);
+					toastService.success(`${entityName} restaurado`);
 					await loadArchived();
 					selectedRows = [];
 					gridWrapper?.deselectAll();
 					showModal = false;
 					itemToProcess = null;
 				} else {
-					toast.error(result.error || 'Error al restaurar');
+					toastService.error(result.error || 'Error al restaurar');
 				}
 			}
 		} catch (_e) {
-			toast.error('Error inesperado');
+			toastService.error('Error inesperado');
 		}
 
 		modalLoading = false;

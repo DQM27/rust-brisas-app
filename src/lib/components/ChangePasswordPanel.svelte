@@ -2,7 +2,7 @@
 	// @ts-nocheck - Svelte 5 runes not recognized by TS
 	import { ChangePasswordSchema, type ChangePasswordForm } from '$lib/schemas/userSchema';
 	import { authService } from '$lib/logic/auth/authService'; // Import authService
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 
 	import { onMount } from 'svelte'; // Added import
 
@@ -80,10 +80,10 @@
 		const serviceRes = await authService.changePassword(userId, valResult.data); // Use authService
 
 		if (serviceRes.ok) {
-			toast.success('Contraseña actualizada correctamente', { icon: '🔒' });
+			toastService.success('Contraseña actualizada correctamente', { icon: '🔒' });
 			onSuccess();
 		} else {
-			toast.error(serviceRes.error || 'Error al actualizar contraseña');
+			toastService.error(serviceRes.error || 'Error al actualizar contraseña');
 		}
 		loading = false;
 	}

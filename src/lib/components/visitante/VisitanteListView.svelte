@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { Plus, Pencil, Trash2, X, RotateCcw, Undo2, History } from 'lucide-svelte';
 	// import { ask } from '@tauri-apps/plugin-dialog'; <-- Removed
 
@@ -91,7 +91,7 @@
 								empresaNombre: empresaNombre
 							} as any;
 						} else {
-							toast.error('Visitante no encontrado');
+							toastService.error('Visitante no encontrado');
 							return;
 						}
 					}
@@ -102,7 +102,7 @@
 					}
 				} catch (e) {
 					console.error(e);
-					toast.error('Error al cargar detalles');
+					toastService.error('Error al cargar detalles');
 				}
 			}, 500);
 		}
@@ -192,7 +192,7 @@
 				}));
 			} else {
 				error = res.error;
-				toast.error(res.error);
+				toastService.error(res.error);
 			}
 		} finally {
 			loading = false;
@@ -219,12 +219,12 @@
 			}
 
 			if (result.ok) {
-				toast.success(selectedVisitante ? 'Visitante actualizado' : 'Visitante creado');
+				toastService.success(selectedVisitante ? 'Visitante actualizado' : 'Visitante creado');
 				loadData();
 				showModal = false;
 				return true;
 			} else {
-				toast.error(result.error);
+				toastService.error(result.error);
 				return false;
 			}
 		} finally {
@@ -242,10 +242,10 @@
 			onConfirm: async () => {
 				const res = await deleteVisitante(visitante.id);
 				if (res.ok) {
-					toast.success('Visitante eliminado');
+					toastService.success('Visitante eliminado');
 					loadData();
 				} else {
-					toast.error(res.error);
+					toastService.error(res.error);
 				}
 			}
 		});
@@ -260,10 +260,10 @@
 			onConfirm: async () => {
 				const res = await restoreVisitante(visitante.id);
 				if (res.ok) {
-					toast.success('Visitante restaurado con éxito');
+					toastService.success('Visitante restaurado con éxito');
 					loadData();
 				} else {
-					toast.error(res.error);
+					toastService.error(res.error);
 				}
 			}
 		});
@@ -282,16 +282,16 @@
 			type: 'danger',
 			confirmText: 'Eliminar',
 			onConfirm: async () => {
-				const toastId = toast.loading('Eliminando...');
+				const toastId = toastService.loading('Eliminando...');
 				let errors = 0;
 				for (const p of selection) {
 					const res = await deleteVisitante(p.id);
 					if (!res.ok) errors++;
 				}
 				if (errors === 0) {
-					toast.success(`${selection.length} visitantes eliminados`, { id: toastId });
+					toastService.success(`${selection.length} visitantes eliminados`, { id: toastId });
 				} else {
-					toast.error(`Error en ${errors} registros`, { id: toastId });
+					toastService.error(`Error en ${errors} registros`, { id: toastId });
 				}
 				loadData();
 				gridWrapper?.deselectAll();

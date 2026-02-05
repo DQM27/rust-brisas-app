@@ -3,7 +3,7 @@
 	import { fade } from 'svelte/transition';
 	import { modulesStore } from '$lib/stores/modules';
 	import { currentUser } from '$lib/stores/auth';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { Package, Construction, EyeOff, Wrench, CheckCircle2 } from 'lucide-svelte';
 
 	// Estados posibles y sus configuraciones visuales
@@ -51,7 +51,7 @@
 			// Validación Frontend (UX): Si intenta poner Dev/Maint y no es GOD
 			const restricted = ['development', 'maintenance'];
 			if (restricted.includes(newStatus) && !$currentUser?.isSuperuser) {
-				toast.error('Solo el Super Usuario puede activar modos de ingeniería.');
+				toastService.error('Solo el Super Usuario puede activar modos de ingeniería.');
 				// Revertir selección visualmente (el store no cambió aún)
 				return;
 			}

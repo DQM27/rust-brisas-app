@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { UserPlus, RefreshCw, X, Calendar, Search, LogIn, Pencil, Trash2 } from 'lucide-svelte';
 	import type { ColumnDefinition } from 'tabulator-tables';
 
@@ -176,7 +176,7 @@
 			preRegistros = await preRegistroVisitaService.getPendientes();
 		} catch (error) {
 			console.error(error);
-			toast.error('Error al cargar pre-registros');
+			toastService.error('Error al cargar pre-registros');
 		} finally {
 			loading = false;
 		}
@@ -204,17 +204,17 @@
 		if (!id || !confirm('¿Estás seguro de cancelar este pre-registro?')) return;
 		try {
 			await preRegistroVisitaService.cancel(id);
-			toast.success('Pre-registro cancelado');
+			toastService.success('Pre-registro cancelado');
 			loadData();
 		} catch (e) {
 			console.error(e);
-			toast.error('Error al cancelar');
+			toastService.error('Error al cancelar');
 		}
 	}
 
 	async function handleCancelMultiple(selection: any[]) {
 		if (!confirm(`¿Estás seguro de cancelar ${selection.length} pre-registros?`)) return;
-		const toastId = toast.loading('Cancelando pre-registros...');
+		const toastId = toastService.loading('Cancelando pre-registros...');
 		let errors = 0;
 		for (const p of selection) {
 			try {
@@ -225,9 +225,9 @@
 			}
 		}
 		if (errors === 0) {
-			toast.success('Pre-registros cancelados', { id: toastId });
+			toastService.success('Pre-registros cancelados', { id: toastId });
 		} else {
-			toast.error(`Error en ${errors} cancelaciones`, { id: toastId });
+			toastService.error(`Error en ${errors} cancelaciones`, { id: toastId });
 		}
 		loadData();
 		gridWrapper?.deselectAll();

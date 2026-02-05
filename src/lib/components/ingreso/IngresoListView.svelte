@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { AlertCircle, History, Users, FileText, UserPlus, LogIn, X } from 'lucide-svelte';
 	import type { IngresoResponse } from '$lib/types/ingreso';
 
@@ -130,7 +130,7 @@
 			action: (e: any, row: any) => {
 				const data = row.getData();
 				navigator.clipboard.writeText(data.nombreCompleto);
-				toast.success('Nombre copiado');
+				toastService.success('Nombre copiado');
 			}
 		},
 		{
@@ -190,7 +190,7 @@
 					break;
 				case 'scan-badge':
 					// Implement scan logic or focus input
-					toast('Modo escaneo activado');
+					toastService.info('Modo escaneo activado');
 					clearCommand();
 					break;
 				case 'refresh':
@@ -241,7 +241,7 @@
 			// La actualización de toolbarColumns ahora la gestiona TabulatorWrapper automáticamente
 		} catch (err: any) {
 			error = err.message || 'Error al cargar datos';
-			toast.error(error);
+			toastService.error(error);
 			ingresos = [];
 		} finally {
 			loading = false;
@@ -344,7 +344,7 @@
 			// Fallback de emergencia
 			if (gridWrapper) {
 				gridWrapper.replaceData(ingresos);
-				toast.error('Error al realizar la búsqueda');
+				toastService.error('Error al realizar la búsqueda');
 			}
 		}
 	}
@@ -412,16 +412,17 @@
 			showExportModal = true;
 		} catch (err) {
 			console.error('Export preload error:', err);
-			toast.error('Error al preparar exportación');
+			toastService.error('Error al preparar exportación');
 		} finally {
 			loading = false;
 		}
 	}
 
 	async function handleExport(format: 'pdf' | 'excel' | 'csv', options: any) {
+		let toastId = '';
 		try {
 			const isSelection = selectedRows.length > 0;
-			const toastId = toast.loading(
+			toastId = toastService.loading(
 				`Exportando ${isSelection ? 'selección' : 'todo'} a ${format.toUpperCase()}...`
 			);
 
@@ -475,10 +476,10 @@
 			}
 
 			await invoke('export_data', { request });
-			toast.success('Exportación completada', { id: toastId });
+			toastService.success('Exportación completada', { id: toastId });
 			showExportModal = false;
 		} catch (err: any) {
-			toast.error('Error: ' + err.message);
+			toastService.error('Error: ' + err.message, { id: toastId });
 		}
 	}
 
@@ -563,12 +564,12 @@
 					observaciones
 				});
 			}
-			toast.success('Salida registrada');
+			toastService.success('Salida registrada');
 			showSalidaModal = false;
 			selectedIngreso = null;
 			loadIngresos();
 		} catch (err: any) {
-			toast.error('Error al registrar salida: ' + err.message);
+			toastService.error('Error al registrar salida: ' + err.message);
 		} finally {
 			salidaLoading = false;
 		}
@@ -604,7 +605,7 @@
 	}
 
 	function handleOpenListado() {
-		toast('Abriendo listado de contratistas...');
+		toastService.info('Abriendo listado de contratistas...');
 		openTab({
 			componentKey: 'contratista-list',
 			title: 'Lista de Contratistas',
@@ -796,13 +797,13 @@
 		try {
 			const res = await contratistaService.createContratista(data as any);
 			if (res.ok) {
-				toast.success('Contratista creado');
+				toastService.success('Contratista creado');
 				showContratistaModal = false;
 			} else {
-				toast.error(res.error);
+				toastService.error(res.error);
 			}
 		} catch (e) {
-			toast.error('Error al crear contratista');
+			toastService.error('Error al crear contratista');
 		}
 	}}
 />

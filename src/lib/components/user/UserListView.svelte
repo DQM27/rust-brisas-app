@@ -3,7 +3,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { AlertCircle, UserPlus, Pencil, Trash2, X, RotateCcw, History } from 'lucide-svelte';
 
 	// Components
@@ -191,27 +191,27 @@
 			if (editingUser) {
 				const result = await userService.updateUser(editingUser.id, data as UpdateUserInput);
 				if (result.ok) {
-					toast.success('Usuario actualizado');
+					toastService.success('Usuario actualizado');
 					loadUsers();
 					return true;
 				} else {
-					toast.error(result.error);
+					toastService.error(result.error);
 					return false;
 				}
 			} else {
 				const result = await userService.createUser(data as CreateUserInput);
 				if (result.ok) {
-					toast.success('Usuario creado');
+					toastService.success('Usuario creado');
 					await loadUsers();
 					return true;
 				} else {
-					toast.error(result.error);
+					toastService.error(result.error);
 					return false;
 				}
 			}
 		} catch (e) {
 			console.error(e);
-			toast.error('Error inesperado');
+			toastService.error('Error inesperado');
 			return false;
 		} finally {
 			modalLoading = false;
@@ -239,16 +239,16 @@
 			isUpdatingStatus = true;
 			const newStatus = !currentStatus;
 
-			const toastId = toast.loading('Actualizando estado...');
+			const toastId = toastService.loading('Actualizando estado...');
 			const result = await userService.changeStatus(id, newStatus);
 
 			if (result.ok) {
-				toast.success(newStatus ? 'Usuario activado' : 'Usuario desactivado', {
+				toastService.success(newStatus ? 'Usuario activado' : 'Usuario desactivado', {
 					id: toastId
 				});
 				loadUsers();
 			} else {
-				toast.error(result.error || 'Error al cambiar estado', { id: toastId });
+				toastService.error(result.error || 'Error al cambiar estado', { id: toastId });
 			}
 		} finally {
 			isUpdatingStatus = false;
@@ -261,7 +261,7 @@
 
 	async function handleDeleteUser(user: UserResponse) {
 		if ($currentUser && user.id === $currentUser.id) {
-			toast.error('No puedes eliminar tu propia cuenta.', { icon: '🚫' });
+			toastService.error('No puedes eliminar tu propia cuenta.', { icon: '🚫' });
 			return;
 		}
 
@@ -271,13 +271,13 @@
 			type: 'danger',
 			confirmText: 'Mover a Papelera',
 			onConfirm: async () => {
-				const toastId = toast.loading('Eliminando...');
+				const toastId = toastService.loading('Eliminando...');
 				const result = await userService.deleteUser(user.id);
 				if (result.ok) {
-					toast.success('Usuario enviado a papelera', { id: toastId });
+					toastService.success('Usuario enviado a papelera', { id: toastId });
 					loadUsers();
 				} else {
-					toast.error(result.error, { id: toastId });
+					toastService.error(result.error, { id: toastId });
 				}
 			}
 		});
@@ -290,13 +290,13 @@
 			type: 'info',
 			confirmText: 'Restaurar',
 			onConfirm: async () => {
-				const toastId = toast.loading('Restaurando...');
+				const toastId = toastService.loading('Restaurando...');
 				const result = await userService.restoreUser(user.id);
 				if (result.ok) {
-					toast.success('Usuario restaurado con éxito', { id: toastId });
+					toastService.success('Usuario restaurado con éxito', { id: toastId });
 					loadUsers();
 				} else {
-					toast.error(result.error, { id: toastId });
+					toastService.error(result.error, { id: toastId });
 				}
 			}
 		});
@@ -309,7 +309,7 @@
 		if (selfIncluded) {
 			toDelete = selection.filter((u) => u.id !== $currentUser!.id);
 			if (toDelete.length === 0) {
-				toast.error('No puedes eliminar tu propia cuenta.', { icon: '🚫' });
+				toastService.error('No puedes eliminar tu propia cuenta.', { icon: '🚫' });
 				return;
 			}
 		}
@@ -325,7 +325,7 @@
 			type: 'danger',
 			confirmText: 'Mover a Papelera',
 			onConfirm: async () => {
-				const toastId = toast.loading('Procesando...');
+				const toastId = toastService.loading('Procesando...');
 				let errors = 0;
 				for (const u of toDelete) {
 					const res = await userService.deleteUser(u.id);
@@ -333,9 +333,9 @@
 				}
 
 				if (errors === 0) {
-					toast.success(`${count} usuarios enviados a papelera`, { id: toastId });
+					toastService.success(`${count} usuarios enviados a papelera`, { id: toastId });
 				} else {
-					toast.error(`Error en ${errors} registros`, { id: toastId });
+					toastService.error(`Error en ${errors} registros`, { id: toastId });
 				}
 				loadUsers();
 				gridWrapper?.deselectAll();

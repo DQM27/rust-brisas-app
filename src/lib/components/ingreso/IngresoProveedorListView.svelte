@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { AlertCircle, FileText, Users, History, X, LogIn, UserPlus } from 'lucide-svelte';
 
 	// Components
@@ -130,11 +130,11 @@
 					}
 					break;
 				case 'scan-badge':
-					toast('Modo escaneo activado');
+					toastService.info('Modo escaneo activado');
 					clearCommand();
 					break;
 				case 'scan-badge':
-					toast('Modo escaneo activado');
+					toastService.info('Modo escaneo activado');
 					clearCommand();
 					break;
 				case 'refresh':
@@ -167,7 +167,7 @@
 			}
 		} catch (err: any) {
 			error = err.message || 'Error al cargar datos';
-			toast.error(error);
+			toastService.error(error);
 			ingresos = [];
 		} finally {
 			loading = false;
@@ -213,12 +213,12 @@
 				observaciones,
 				devolvioGafete
 			);
-			toast.success('Salida de proveedor registrada');
+			toastService.success('Salida de proveedor registrada');
 			showSalidaModal = false;
 			selectedIngreso = null;
 			loadIngresos();
 		} catch (err: any) {
-			toast.error('Error al registrar salida: ' + err.message);
+			toastService.error('Error al registrar salida: ' + err.message);
 		} finally {
 			salidaLoading = false;
 		}
@@ -251,7 +251,7 @@
 	}
 
 	function handleOpenListado() {
-		toast('Abriendo listado de proveedores...');
+		toastService.info('Abriendo listado de proveedores...');
 		openTab({
 			componentKey: 'proveedor-list',
 			title: 'Lista de Proveedores',
@@ -491,14 +491,14 @@
 		try {
 			const res = await createProveedor(data as any);
 			if (res.ok) {
-				toast.success('Proveedor creado');
+				toastService.success('Proveedor creado');
 				showProveedorModal = false;
 				loadIngresos();
 			} else {
-				toast.error(res.error);
+				toastService.error(res.error);
 			}
 		} catch {
-			toast.error('Error al crear proveedor');
+			toastService.error('Error al crear proveedor');
 		}
 	}}
 />

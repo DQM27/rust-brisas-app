@@ -3,7 +3,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick, untrack } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import {
 		Plus,
 		Edit3,
@@ -118,7 +118,7 @@
 								empresaNombre: empresaNombre
 							} as any;
 						} else {
-							toast.error('No se pudo cargar la información del contratista');
+							toastService.error('No se pudo cargar la información del contratista');
 							return;
 						}
 					}
@@ -131,7 +131,7 @@
 					}
 				} catch (e) {
 					console.error('Error opening detail', e);
-					toast.error('Error al cargar detalles');
+					toastService.error('Error al cargar detalles');
 				}
 			}, 500);
 		}
@@ -251,7 +251,7 @@
 							await vehiculos.delete(c.id);
 							loadContratistas();
 						} catch (e) {
-							toast.error('Error al eliminar vehículo');
+							toastService.error('Error al eliminar vehículo');
 						}
 					}
 				} else {
@@ -385,13 +385,13 @@
 	async function handleStatusChange(id: string, status: string) {
 		if (isUpdatingStatus) return;
 		if (!$currentUser || !can($currentUser, 'contratistas:update')) {
-			toast.error('No tienes permisos para cambiar el estado.');
+			toastService.error('No tienes permisos para cambiar el estado.');
 			return;
 		}
 
 		isUpdatingStatus = true;
 		const newStatus = status === 'activo' ? 'inactivo' : 'activo';
-		const toastId = toast.loading(`Cambiando a ${newStatus}...`);
+		const toastId = toastService.loading(`Cambiando a ${newStatus}...`);
 
 		// Update Grid (Optimistic, Surgical)
 		// No full redraw, just update the row
@@ -410,7 +410,8 @@
 		try {
 			const res = await contratistaService.changeEstado(id, newStatus as any);
 			if (res.ok) {
-				toast.success(`Estado actualizado`, { id: toastId });
+				toastService.dismiss(toastId);
+				toastService.success(`Estado actualizado`);
 				// Update source of truth
 				const index = contratistas.findIndex((c) => c.id === id);
 				if (index !== -1) {
@@ -423,12 +424,14 @@
 			} else {
 				// Revert
 				gridWrapper?.updateRow(id, { estado: status });
-				toast.error(res.error, { id: toastId });
+				toastService.dismiss(toastId);
+				toastService.error(res.error);
 			}
 		} catch (e) {
 			gridWrapper?.updateRow(id, { estado: status });
 			console.error(e);
-			toast.error('Error al cambiar estado', { id: toastId });
+			toastService.dismiss(toastId);
+			toastService.error('Error al cambiar estado');
 		} finally {
 			isUpdatingStatus = false;
 		}
@@ -459,25 +462,25 @@
 			if (editingContratista) {
 				const res = await contratistaService.updateContratista(editingContratista.id, data);
 				if (res.ok) {
-					toast.success('Contratista actualizado');
+					toastService.success('Contratista actualizado');
 					closeModal();
 					loadContratistas();
 				} else {
-					toast.error(res.error);
+					toastService.error(res.error);
 				}
 			} else {
 				const res = await contratistaService.createContratista(data);
 				if (res.ok) {
-					toast.success('Contratista creado');
+					toastService.success('Contratista creado');
 					closeModal();
 					loadContratistas();
 				} else {
-					toast.error(res.error);
+					toastService.error(res.error);
 				}
 			}
 		} catch (e) {
 			console.error(e);
-			toast.error('Error al guardar contratista');
+			toastService.error('Error al guardar contratista');
 		}
 		modalLoading = false;
 	}
@@ -489,7 +492,7 @@
 	// Restore
 	function handleRestore(contratista: ContratistaResponse) {
 		if (!$currentUser || !can($currentUser, 'contratistas:delete')) {
-			toast.error('No tienes permisos para restaurar.');
+			toastService.error('No tienes permisos para restaurar.');
 			return;
 		}
 
@@ -499,13 +502,15 @@
 			type: 'info',
 			confirmText: 'Restaurar',
 			onConfirm: async () => {
-				const toastId = toast.loading('Restaurando...');
+				const toastId = toastService.loading('Restaurando...');
 				const result = await contratistaService.restoreContratista(contratista.id);
 				if (result.ok) {
-					toast.success('Contratista restaurado', { id: toastId });
+					toastService.dismiss(toastId);
+					toastService.success('Contratista restaurado');
 					loadContratistas();
 				} else {
-					toast.error(result.error || 'Error desconocido', { id: toastId });
+					toastService.dismiss(toastId);
+					toastService.error(result.error || 'Error desconocido');
 				}
 			}
 		});
@@ -514,7 +519,7 @@
 	// Delete Contractor
 	function handleDelete(contratista: ContratistaResponse) {
 		if (!$currentUser || !can($currentUser, 'contratistas:delete')) {
-			toast.error('No tienes permisos para eliminar.');
+			toastService.error('No tienes permisos para eliminar.');
 			return;
 		}
 
@@ -524,13 +529,15 @@
 			type: 'danger',
 			confirmText: 'Mover a Papelera',
 			onConfirm: async () => {
-				const toastId = toast.loading('Eliminando...');
+				const toastId = toastService.loading('Eliminando...');
 				const result = await contratistaService.deleteContratista(contratista.id);
 				if (result.ok) {
-					toast.success('Contratista movido a papelera', { id: toastId });
+					toastService.dismiss(toastId);
+					toastService.success('Contratista movido a papelera');
 					loadContratistas();
 				} else {
-					toast.error(result.error, { id: toastId });
+					toastService.dismiss(toastId);
+					toastService.error(result.error);
 				}
 			}
 		});
@@ -539,7 +546,7 @@
 	// Bulk Delete
 	function handleDeleteMultiple(selection: ContratistaResponse[]) {
 		if (!$currentUser || !can($currentUser, 'contratistas:delete')) {
-			toast.error('No tienes permisos para eliminar.');
+			toastService.error('No tienes permisos para eliminar.');
 			return;
 		}
 
@@ -549,16 +556,18 @@
 			type: 'danger',
 			confirmText: 'Mover a Papelera',
 			onConfirm: async () => {
-				const toastId = toast.loading('Eliminando...');
+				const toastId = toastService.loading('Eliminando...');
 				let errors = 0;
 				for (const c of selection) {
 					const res = await contratistaService.deleteContratista(c.id);
 					if (!res.ok) errors++;
 				}
 				if (errors === 0) {
-					toast.success(`${selection.length} contratistas enviados a papelera`, { id: toastId });
+					toastService.dismiss(toastId);
+					toastService.success(`${selection.length} contratistas enviados a papelera`);
 				} else {
-					toast.error(`Error en ${errors} registros`, { id: toastId });
+					toastService.dismiss(toastId);
+					toastService.error(`Error en ${errors} registros`);
 				}
 				loadContratistas();
 				gridWrapper?.deselectAll();
@@ -623,9 +632,10 @@
 	}
 
 	async function handleExport(format: any, options: any) {
+		let toastId = '';
 		try {
 			const isSelection = selectedRows.length > 0;
-			const toastId = toast.loading(
+			toastId = toastService.loading(
 				`Exportando ${isSelection ? 'selección' : 'todo'} a ${format.toUpperCase()}...`
 			);
 
@@ -657,14 +667,17 @@
 				isSelection // onlySelected
 			);
 
-			toast.success('Exportación completada', { id: toastId });
+			toastService.dismiss(toastId);
+			toastService.success('Exportación completada');
 		} catch (err: any) {
 			// Cancelación por usuario no es error grave
 			if (err.message?.includes('cancelada')) {
-				toast('Exportación cancelada', { icon: 'ℹ️' });
+				toastService.dismiss(toastId);
+				toastService.info('Exportación cancelada');
 				return;
 			}
-			toast.error('Error: ' + err.message);
+			toastService.dismiss(toastId);
+			toastService.error('Error: ' + err.message);
 		}
 	}
 

@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 	import { Plus, Pencil, Trash2, X, RotateCcw, History } from 'lucide-svelte';
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -91,7 +91,7 @@
 								empresaNombre: empresaNombre
 							} as any;
 						} else {
-							toast.error('Proveedor no encontrado');
+							toastService.error('Proveedor no encontrado');
 							return;
 						}
 					}
@@ -102,7 +102,7 @@
 					}
 				} catch (e) {
 					console.error(e);
-					toast.error('Error al cargar detalles');
+					toastService.error('Error al cargar detalles');
 				}
 			}, 500);
 		}
@@ -176,7 +176,7 @@
 				}
 			} else {
 				error = res.error;
-				toast.error(res.error);
+				toastService.error(res.error);
 			}
 		} finally {
 			loading = false;
@@ -213,12 +213,12 @@
 			}
 
 			if (result.ok) {
-				toast.success(selectedProveedor ? 'Proveedor actualizado' : 'Proveedor creado');
+				toastService.success(selectedProveedor ? 'Proveedor actualizado' : 'Proveedor creado');
 				loadData();
 				showModal = false;
 				return true;
 			} else {
-				toast.error(result.error);
+				toastService.error(result.error);
 				return false;
 			}
 		} finally {
@@ -231,17 +231,17 @@
 		if (isUpdatingStatus) return;
 		isUpdatingStatus = true;
 		const newStatus: EstadoProveedor = currentStatus === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
-		const toastId = toast.loading(`Cambiando estado a ${newStatus}...`);
+		const toastId = toastService.loading(`Cambiando estado a ${newStatus}...`);
 		try {
 			const res = await changeStatus(id, newStatus);
 			if (res.ok) {
-				toast.success('Estado actualizado', { id: toastId });
+				toastService.success('Estado actualizado', { id: toastId });
 				loadData();
 			} else {
-				toast.error(res.error, { id: toastId });
+				toastService.error(res.error, { id: toastId });
 			}
 		} catch (e) {
-			toast.error('Error al cambiar estado', { id: toastId });
+			toastService.error('Error al cambiar estado', { id: toastId });
 		} finally {
 			isUpdatingStatus = false;
 		}
@@ -256,10 +256,10 @@
 			onConfirm: async () => {
 				const res = await deleteProveedor(proveedor.id);
 				if (res.ok) {
-					toast.success('Proveedor enviado a papelera');
+					toastService.success('Proveedor enviado a papelera');
 					loadData();
 				} else {
-					toast.error(res.error);
+					toastService.error(res.error);
 				}
 			}
 		});
@@ -272,13 +272,13 @@
 			type: 'info',
 			confirmText: 'Restaurar',
 			onConfirm: async () => {
-				const toastId = toast.loading('Restaurando...');
+				const toastId = toastService.loading('Restaurando...');
 				const res = await restoreProveedor(proveedor.id);
 				if (res.ok) {
-					toast.success('Proveedor restaurado con éxito', { id: toastId });
+					toastService.success('Proveedor restaurado con éxito', { id: toastId });
 					loadData();
 				} else {
-					toast.error(res.error, { id: toastId });
+					toastService.error(res.error, { id: toastId });
 				}
 			}
 		});
@@ -291,16 +291,18 @@
 			type: 'danger',
 			confirmText: 'Mover a Papelera',
 			onConfirm: async () => {
-				const toastId = toast.loading('Eliminando...');
+				const toastId = toastService.loading('Eliminando...');
 				let errors = 0;
 				for (const p of selection) {
 					const res = await deleteProveedor(p.id);
 					if (!res.ok) errors++;
 				}
 				if (errors === 0) {
-					toast.success(`${selection.length} proveedores enviados a papelera`, { id: toastId });
+					toastService.success(`${selection.length} proveedores enviados a papelera`, {
+						id: toastId
+					});
 				} else {
-					toast.error(`Error en ${errors} registros`, { id: toastId });
+					toastService.error(`Error en ${errors} registros`, { id: toastId });
 				}
 				loadData();
 				gridWrapper?.deselectAll();

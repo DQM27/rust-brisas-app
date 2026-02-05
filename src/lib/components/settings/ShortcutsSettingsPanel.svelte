@@ -18,7 +18,7 @@
 	} from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { onMount } from 'svelte';
-	import { toast } from 'svelte-5-french-toast';
+	import { toastService } from '$lib/services/toastService';
 
 	import {
 		ALL_SHORTCUTS,
@@ -111,7 +111,7 @@
 
 	function startEditing(shortcutId: string) {
 		if (ALL_SHORTCUTS.find((s) => s.id === shortcutId)?.readonly) {
-			toast.error('Este atajo no se puede personalizar');
+			toastService.error('Este atajo no se puede personalizar');
 			return;
 		}
 		editingShortcut = shortcutId;
