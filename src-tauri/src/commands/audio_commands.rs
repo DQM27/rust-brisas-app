@@ -43,9 +43,7 @@ pub async fn play_alert_sound(
                 match alert_sound_setting.as_str() {
                     "Hand" => media_path.join("Windows Foreground.wav"),
                     "Exclamation" => media_path.join("Windows Exclamation.wav"),
-                    "Beep" => media_path.join("Windows Background.wav"),
                     "Question" => media_path.join("Windows Navigation Start.wav"),
-                    "Asterisk" => media_path.join("Windows Background.wav"),
                     _ => media_path.join("Windows Background.wav"),
                 }
             }
