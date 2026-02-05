@@ -33,7 +33,7 @@
 				completeLogin(result.data);
 			}
 		} else {
-			toastService.error(result.error || 'Error al iniciar sesión', { icon: '✕' });
+			toastService.error(result.error || 'Error al iniciar sesión');
 		}
 
 		loading = false;
@@ -42,7 +42,7 @@
 	function completeLogin(user: UserResponse) {
 		setAuth(user);
 		formRef?.reset();
-		toastService.success('Sesión iniciada correctamente', { icon: '✓' });
+		toastService.success('Sesión iniciada correctamente');
 	}
 
 	function handlePasswordChanged() {

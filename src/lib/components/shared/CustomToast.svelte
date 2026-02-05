@@ -25,7 +25,11 @@
 		{:else if toast.type === 'loading'}
 			<Loader2 size={20} class="icon-loading" />
 		{:else if icon}
-			{@render icon()}
+			{#if typeof icon === 'function'}
+				{@render icon()}
+			{:else}
+				<span class="text-lg leading-none">{icon}</span>
+			{/if}
 		{/if}
 	</div>
 	<div class="toast-message">

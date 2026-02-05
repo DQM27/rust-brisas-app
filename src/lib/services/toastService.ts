@@ -1,7 +1,7 @@
 import { toast } from 'svelte-5-french-toast';
 import { get } from 'svelte/store';
 import { generalSettings } from '../stores/settingsStore';
-import { invoke } from '@tauri-apps/api/core';
+import { configService } from '../logic/system/configService';
 import CustomToast from '../components/shared/CustomToast.svelte';
 
 /**
@@ -34,9 +34,9 @@ export const toastService = {
         const settings = get(generalSettings);
         const { playSound = true, ...restOptions } = options;
 
-        // Reproducir sonido si está habilitado
+        // Reproducir sonido usando el servicio de configuración (Arquitectura centralizada)
         if (playSound && settings.enableNotificationSounds) {
-            invoke('play_alert_sound').catch((e) => console.error('Error playing sound:', e));
+            configService.playAlertSound().catch((e) => console.error('Error playing sound:', e));
         }
 
         if (!settings.showToasts) return '';
