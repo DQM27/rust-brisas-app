@@ -135,6 +135,7 @@ windows = { version = "0.58", features = [
     "Win32_System_SystemInformation",
 ] }
 mimalloc = { version = "0.1", default-features = false } # Asignador de memoria de alto rendimiento
+reqwest = { version = "0.11", features = ["json", "blocking"] } # Cliente HTTP para Open-Meteo
 
 [features]
 # Por default, todas las funciones de export están habilitadas

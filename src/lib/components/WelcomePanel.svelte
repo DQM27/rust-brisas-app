@@ -17,6 +17,7 @@
 	import BirthdayCelebration from '$lib/components/visual/BirthdayCelebration.svelte';
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 	import { astroApi } from '$lib/api/astro';
+	import { weatherApi } from '$lib/api/weather';
 	import { particleSettings } from '$lib/stores/particleSettingsStore';
 
 	// Load ingreso data on mount
@@ -72,6 +73,20 @@
 			} catch (err) {
 				console.error('Failed to load astro data:', err);
 			}
+
+			// Load Real Weather 🌤️🌧️
+			try {
+				const weather = await weatherApi.getWeather();
+				console.log('Weather Data:', weather);
+				particleSettings.applyWeatherConditions({
+					code: weather.weather_code,
+					temp: weather.temperature,
+					wind: weather.wind_speed,
+					text: weather.condition_text
+				});
+			} catch (err) {
+				console.error('Failed to load weather data:', err);
+			}
 			document.addEventListener('visibilitychange', handleVisibilityChange);
 
 			try {
@@ -101,7 +116,29 @@
 			}
 		};
 		window.addEventListener('keydown', handleKeydown);
-		return () => window.removeEventListener('keydown', handleKeydown);
+
+		// Refresh weather every 30 minutes
+		const weatherInterval = setInterval(
+			async () => {
+				try {
+					const weather = await weatherApi.getWeather();
+					particleSettings.applyWeatherConditions({
+						code: weather.weather_code,
+						temp: weather.temperature,
+						wind: weather.wind_speed,
+						text: weather.condition_text
+					});
+				} catch (e) {
+					console.error('Weather refresh failed', e);
+				}
+			},
+			30 * 60 * 1000
+		);
+
+		return () => {
+			window.removeEventListener('keydown', handleKeydown);
+			clearInterval(weatherInterval);
+		};
 	});
 
 	// Birthday Logic 🎂 - Check real birthday OR override from settings
@@ -212,6 +249,23 @@
 	{:else}
 		<!-- Minimal mode: just celestial cycle and weather (no mountains) -->
 		<SceneRenderer isBirthday={false} />
+	{/if}
+
+	<!-- Weather Widget (Top Right) -->
+	{#if !$generalSettings.isKioskMode && !isBirthday}
+		<div
+			transition:fade={{ duration: 1000 }}
+			class="absolute top-4 right-6 z-20 flex flex-col items-end gap-0 text-white/90 drop-shadow-md select-none"
+		>
+			<h1 class="text-4xl font-thin tracking-tighter tabular-nums leading-none">
+				{$particleSettings.temperature.toFixed(1)}°
+			</h1>
+			{#if $particleSettings.conditionText}
+				<span class="text-xs font-medium tracking-widest uppercase opacity-80 pl-1">
+					{$particleSettings.conditionText}
+				</span>
+			{/if}
+		</div>
 	{/if}
 
 	<!-- Content -->

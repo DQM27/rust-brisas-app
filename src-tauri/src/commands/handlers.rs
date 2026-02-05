@@ -260,6 +260,7 @@ macro_rules! register_handlers {
             // COMANDOS DE ASTRONOMÍA
             // ==========================================
             commands::astro_commands::get_astro_data,
+            commands::weather_commands::get_weather_data,
         ]
     };
 }

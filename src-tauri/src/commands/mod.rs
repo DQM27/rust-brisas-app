@@ -14,6 +14,7 @@ pub mod config_commands;
 pub mod contratista_commands;
 pub mod module_commands;
 pub mod system_commands;
+pub mod weather_commands;
 
 pub mod empresa_commands;
 pub mod export_commands;

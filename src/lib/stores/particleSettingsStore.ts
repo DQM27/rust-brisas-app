@@ -21,6 +21,8 @@ export interface ParticleSettings {
 	sunStyle: string;
 	sunrise: number;
 	sunset: number;
+	temperature: number;
+	conditionText: string;
 	starCountMultiplier: number;
 	starTwinkleSpeed: number;
 	shootingStarFrequency: number;
@@ -49,6 +51,8 @@ export const DEFAULT_PARTICLE_SETTINGS: ParticleSettings = {
 	sunStyle: 'normal',
 	sunrise: 6.0,
 	sunset: 18.0,
+	temperature: 25.0,
+	conditionText: '',
 	starCountMultiplier: 1.0,
 	starTwinkleSpeed: 1.0,
 	shootingStarFrequency: 1.0,
@@ -133,6 +137,53 @@ function createParticleSettingsStore() {
 		updateWeatherTurbulence: (m: number) => update((s) => ({ ...s, weatherTurbulence: m })),
 		updateMoonPhase: (phase: string) => update((s) => ({ ...s, moonPhase: phase })),
 		updateSunTimes: (sunrise: number, sunset: number) => update((s) => ({ ...s, sunrise, sunset })),
+
+		applyWeatherConditions: (data: { code: number; temp: number; wind: number; text: string }) =>
+			update((s) => {
+				let cloudStyle: 'cartoon' | 'soft' = 'cartoon';
+				let cloudCount = 5;
+				let cloudOpacity = 0.9;
+				let meteorShower = false;
+				let sunStyle = 'normal';
+
+				// Mapeo de códigos WMO Open-Meteo a Efectos Visuales
+				if (data.code <= 1) {
+					// 0-1: Despejado / Mayormente Despejado
+					cloudCount = 3;
+					cloudOpacity = 0.7;
+				} else if (data.code <= 3) {
+					// 2-3: Parcialmente Nublado / Nublado
+					cloudCount = 12;
+					cloudOpacity = 0.95;
+					cloudStyle = 'soft';
+					sunStyle = 'cloudy';
+				} else if (data.code >= 51 && data.code <= 67) {
+					// Lluvia / Llovizna
+					cloudCount = 20;
+					cloudOpacity = 1.0;
+					cloudStyle = 'soft';
+					sunStyle = 'cloudy';
+				} else if (data.code >= 95) {
+					// Tormentas
+					cloudCount = 25;
+					cloudOpacity = 1.0;
+					sunStyle = 'cloudy';
+				}
+
+				return {
+					...s,
+					temperature: data.temp,
+					conditionText: data.text,
+					cloudStyle,
+					cloudCount,
+					cloudOpacity,
+					sunStyle,
+					// El viento afecta la velocidad de nubes y partículas
+					cloudWindSpeed: Math.max(0.5, data.wind / 10),
+					weatherWindInfluence: Math.max(1.0, data.wind / 5)
+				};
+			}),
+
 		updateSunStyle: (style: string) => update((s) => ({ ...s, sunStyle: style })),
 		updateStarCount: (m: number) => update((s) => ({ ...s, starCountMultiplier: m })),
 		updateStarTwinkle: (m: number) => update((s) => ({ ...s, starTwinkleSpeed: m })),
