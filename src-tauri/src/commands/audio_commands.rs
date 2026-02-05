@@ -1,7 +1,7 @@
 use crate::config::settings::AppConfigState;
 use crate::domain::errors::ConfigError;
 use kira::manager::{backend::cpal::CpalBackend, AudioManager, AudioManagerSettings};
-use kira::sound::static_sound::{StaticSoundData, StaticSoundSettings};
+use kira::sound::static_sound::StaticSoundData;
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 use tauri::{command, State};
@@ -17,18 +17,44 @@ static AUDIO_MANAGER: Lazy<Mutex<Option<AudioManager<CpalBackend>>>> = Lazy::new
 #[command]
 pub async fn play_alert_sound(
     config: State<'_, AppConfigState>,
-    _sound_type: Option<String>,
+    sound_type: Option<String>,
 ) -> Result<(), ConfigError> {
-    let (custom_path, use_custom) = {
+    let (custom_path, use_custom, alert_sound_setting) = {
         let config_guard = config.read().map_err(|e| ConfigError::Message(e.to_string()))?;
-        (config_guard.audio.custom_sound_path.clone(), config_guard.audio.use_custom)
+        (
+            config_guard.audio.custom_sound_path.clone(),
+            config_guard.audio.use_custom,
+            config_guard.audio.alert_sound.clone(),
+        )
     };
 
+    let type_str = sound_type.unwrap_or_else(|| "error".to_string());
+
     let sound_path = if use_custom && custom_path.is_some() {
-        custom_path.unwrap()
+        std::path::PathBuf::from(custom_path.unwrap())
     } else {
-        return Ok(());
+        // Mapeo de tipos a sonidos de sistema de Windows
+        let media_path = std::path::PathBuf::from("C:\\Windows\\Media");
+        match type_str.as_str() {
+            "success" => media_path.join("Windows Notify System Generic.wav"),
+            "info" => media_path.join("Windows Background.wav"),
+            _ => {
+                // Fallback a la configuración de alert_sound (Hand, Exclamation, etc.)
+                match alert_sound_setting.as_str() {
+                    "Hand" => media_path.join("Windows Foreground.wav"),
+                    "Exclamation" => media_path.join("Windows Exclamation.wav"),
+                    "Beep" => media_path.join("Windows Background.wav"),
+                    "Question" => media_path.join("Windows Navigation Start.wav"),
+                    "Asterisk" => media_path.join("Windows Background.wav"),
+                    _ => media_path.join("Windows Background.wav"),
+                }
+            }
+        }
     };
+
+    if !sound_path.exists() {
+        return Ok(());
+    }
 
     // Reproducción nativa con Kira
     let mut manager_guard =
