@@ -100,7 +100,7 @@ export const GafeteValidationSchema = z
 export const ModoVehiculoSchema = z
 	.object({
 		modoIngreso: z.enum(['caminando', 'vehiculo']),
-		vehiculoId: z.string().uuid().nullable(),
+		vehiculoId: z.string().nullable(),
 		tieneVehiculos: z.boolean()
 	})
 	.refine(
@@ -140,9 +140,9 @@ export const IngresoFormValidationSchema = z.object({
 	canEnter: z.boolean().refine((val) => val === true, {
 		message: 'El contratista no puede ingresar'
 	}),
-	contratistaId: z.string().uuid('ID de contratista inválido'),
+	contratistaId: z.string().min(1, 'ID de contratista inválido'),
 	modoIngreso: z.enum(['caminando', 'vehiculo']),
-	vehiculoId: z.string().uuid().nullable(),
+	vehiculoId: z.string().nullable(),
 	gafeteNumero: z.string().optional(),
 	tipoAutorizacion: z.enum(['praind', 'correo'])
 });

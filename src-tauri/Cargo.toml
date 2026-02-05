@@ -105,6 +105,7 @@ image = { version = "0.25", default-features = false, features = [
     "jpeg",
     "webp",
 ] }
+kira = { version = "0.9", features = ["cpal", "wav", "mp3"] }
 
 # =============================================================================
 # EXPORTACIÓN Y GENERACIÓN DE DOCUMENTOS (Opcionales por Features)

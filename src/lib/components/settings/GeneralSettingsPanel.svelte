@@ -226,11 +226,27 @@
 						</select>
 
 						<button
-							onclick={testSound}
-							class="p-2 rounded-md bg-surface-hover hover:bg-emphasis text-primary transition-colors"
-							title="Probar Sonido"
+							onclick={() => configService.playAlertSound('success')}
+							class="p-2 rounded-md bg-green-50 dark:bg-green-900/20 text-green-600 hover:bg-green-100 transition-colors"
+							title="Probar Éxito"
 						>
-							<Volume2 size={16} />
+							<Check size={16} />
+						</button>
+
+						<button
+							onclick={() => configService.playAlertSound('info')}
+							class="p-2 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 transition-colors"
+							title="Probar Info"
+						>
+							<Bell size={16} />
+						</button>
+
+						<button
+							onclick={testSound}
+							class="p-2 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 transition-colors"
+							title="Probar Error"
+						>
+							<X size={16} />
 						</button>
 					</div>
 				</div>

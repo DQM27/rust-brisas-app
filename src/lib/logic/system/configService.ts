@@ -51,9 +51,9 @@ export const configService = {
         }
     },
 
-    async playAlertSound(): Promise<ServiceResult<void>> {
+    async playAlertSound(soundType?: string): Promise<ServiceResult<void>> {
         try {
-            await configApi.playAlertSound();
+            await configApi.playAlertSound(soundType);
             return { ok: true, data: undefined };
         } catch (e) {
             return { ok: false, error: String(e) };

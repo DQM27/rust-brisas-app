@@ -36,5 +36,5 @@ export const configApi = {
     /**
      * Plays the current alert sound for testing
      */
-    playAlertSound: () => invoke<void>('play_alert_sound')
+    playAlertSound: (soundType?: string) => invoke<void>('play_alert_sound', { soundType })
 };

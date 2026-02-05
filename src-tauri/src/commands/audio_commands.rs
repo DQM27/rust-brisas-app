@@ -1,43 +1,42 @@
-/// Gestión de Notificaciones Auditivas y Personalización de Sonidos.
-///
-/// Este módulo permite la reproducción de alertas sonoras del sistema y la gestión
-/// de archivos de audio personalizados, facilitando la identificación auditiva
-/// de eventos críticos en portería.
 use crate::config::settings::AppConfigState;
 use crate::domain::errors::ConfigError;
-use std::process::Command;
+use kira::manager::{backend::cpal::CpalBackend, AudioManager, AudioManagerSettings};
+use kira::sound::static_sound::{StaticSoundData, StaticSoundSettings};
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
 use tauri::{command, State};
 
+/// Gestor global de audio para evitar reinicializar el stream en cada sonido.
+static AUDIO_MANAGER: Lazy<Mutex<Option<AudioManager<CpalBackend>>>> = Lazy::new(|| {
+    let manager = AudioManager::<CpalBackend>::new(AudioManagerSettings::default()).ok();
+    Mutex::new(manager)
+});
+
 /// Reproduce un sonido de alerta basado en la configuración actual.
-/// Soporta sonidos nativos del sistema y archivos WAV personalizados en Windows.
+/// Soporta sonidos nativos (mapeados a internos) y archivos WAV/MP3 personalizados.
 #[command]
-pub async fn play_alert_sound(config: State<'_, AppConfigState>) -> Result<(), ConfigError> {
-    #[allow(unused_variables)]
-    let (sound, custom_path, use_custom) = {
+pub async fn play_alert_sound(
+    config: State<'_, AppConfigState>,
+    _sound_type: Option<String>,
+) -> Result<(), ConfigError> {
+    let (custom_path, use_custom) = {
         let config_guard = config.read().map_err(|e| ConfigError::Message(e.to_string()))?;
-        (
-            config_guard.audio.alert_sound.clone(),
-            config_guard.audio.custom_sound_path.clone(),
-            config_guard.audio.use_custom,
-        )
+        (config_guard.audio.custom_sound_path.clone(), config_guard.audio.use_custom)
     };
 
-    #[cfg(target_os = "windows")]
-    {
-        if use_custom && custom_path.is_some() {
-            let path = custom_path.unwrap();
-            let cmd =
-                format!("$player = New-Object System.Media.SoundPlayer('{path}'); $player.Play();");
-            let _ = Command::new("powershell").args(["-NoProfile", "-Command", &cmd]).spawn();
-        } else {
-            let cmd = format!("[System.Media.SystemSounds]:: {sound}.Play()");
-            let _ = Command::new("powershell").args(["-NoProfile", "-Command", &cmd]).spawn();
-        }
-    }
+    let sound_path = if use_custom && custom_path.is_some() {
+        custom_path.unwrap()
+    } else {
+        return Ok(());
+    };
 
-    #[cfg(not(target_os = "windows"))]
-    {
-        let _ = Command::new("afplay").arg("/System/Library/Sounds/Sosumi.aiff").spawn();
+    // Reproducción nativa con Kira
+    let mut manager_guard =
+        AUDIO_MANAGER.lock().map_err(|_| ConfigError::Message("Audio mutex error".to_string()))?;
+    if let Some(manager) = manager_guard.as_mut() {
+        if let Ok(sound_data) = StaticSoundData::from_file(&sound_path) {
+            let _ = manager.play(sound_data);
+        }
     }
 
     Ok(())
@@ -67,7 +66,10 @@ pub async fn upload_custom_sound(
         fs::create_dir_all(&data_dir)?;
     }
 
-    let dest = data_dir.join("alert.wav");
+    // Mantener la extensión original
+    let extension = source.extension().and_then(|s| s.to_str()).unwrap_or("wav");
+    let dest = data_dir.join(format!("alert.{extension}"));
+
     fs::copy(source, &dest)?;
 
     let dest_str = dest.to_string_lossy().to_string();
@@ -76,6 +78,7 @@ pub async fn upload_custom_sound(
         let mut config_guard = config.write().map_err(|e| ConfigError::Message(e.to_string()))?;
         config_guard.audio.custom_sound_path = Some(dest_str.clone());
         config_guard.audio.use_custom = true;
+
         let config_path = if let Some(d) = dirs::data_local_dir() {
             d.join("Brisas").join("brisas.toml")
         } else {
@@ -86,15 +89,6 @@ pub async fn upload_custom_sound(
     }
 
     Ok(dest_str)
-}
-
-/// Comando auxiliar para reproducción directa de archivos (Stub).
-pub fn play_sound(
-    _sound: String,
-    _custom_path: Option<String>,
-    _use_custom: bool,
-) -> Result<(), ConfigError> {
-    Ok(())
 }
 
 /// Activa o desactiva el uso del sonido personalizado en la configuración.

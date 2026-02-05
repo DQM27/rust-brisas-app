@@ -14,6 +14,12 @@ export const toastService = {
      */
     success(message: string, options: any = {}) {
         const settings = get(generalSettings);
+
+        // Reproducir sonido de éxito si está habilitado
+        if (settings.enableNotificationSounds) {
+            configService.playAlertSound('success').catch((e) => console.error('Error playing sound:', e));
+        }
+
         if (!settings.showToasts) return '';
 
         return toast.custom(CustomToast as any, {
@@ -36,7 +42,7 @@ export const toastService = {
 
         // Reproducir sonido usando el servicio de configuración (Arquitectura centralizada)
         if (playSound && settings.enableNotificationSounds) {
-            configService.playAlertSound().catch((e) => console.error('Error playing sound:', e));
+            configService.playAlertSound('error').catch((e) => console.error('Error playing sound:', e));
         }
 
         if (!settings.showToasts) return '';
@@ -63,6 +69,12 @@ export const toastService = {
      */
     info(message: string, options: any = {}) {
         const settings = get(generalSettings);
+
+        // Reproducir sonido informativo si está habilitado
+        if (settings.enableNotificationSounds) {
+            configService.playAlertSound('info').catch((error) => console.error('Error playing sound:', error));
+        }
+
         if (!settings.showToasts) return '';
 
         return toast.custom(CustomToast as any, {

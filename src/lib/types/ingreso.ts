@@ -16,8 +16,8 @@ export const ModoIngresoEnum = z.enum(['caminando', 'vehiculo']);
 
 // Esquema para crear ingreso de contratista
 export const CreateIngresoContratistaSchema = z.object({
-	contratistaId: z.string().uuid('ID de contratista inválido'),
-	vehiculoId: z.string().uuid().optional().nullable(),
+	contratistaId: z.string().min(1, 'ID de contratista inválido'),
+	vehiculoId: z.string().optional().nullable(),
 	gafeteNumero: z.string().optional().nullable(),
 	tipoAutorizacion: z.string().refine((val) => ['praind', 'correo'].includes(val.toLowerCase()), {
 		message: 'Tipo de autorización inválido'
@@ -26,7 +26,7 @@ export const CreateIngresoContratistaSchema = z.object({
 		message: 'Modo de ingreso inválido'
 	}),
 	observaciones: z.string().max(500).optional().nullable(),
-	usuarioIngresoId: z.string().uuid('ID de usuario inválido')
+	usuarioIngresoId: z.string().min(1, 'ID de usuario inválido')
 });
 
 // Esquema para crear ingreso de visita
@@ -46,7 +46,7 @@ export const CreateIngresoVisitaSchema = z.object({
 	vehiculoPlaca: z.string().optional().nullable(),
 	gafeteNumero: z.string().optional().nullable(),
 	observaciones: z.string().max(500).optional().nullable(),
-	usuarioIngresoId: z.string().uuid('ID de usuario inválido')
+	usuarioIngresoId: z.string().min(1, 'ID de usuario inválido')
 });
 
 // Esquema para crear ingreso de proveedor
@@ -54,7 +54,7 @@ export const CreateIngresoProveedorSchema = z.object({
 	cedula: z.string().min(1, 'Cédula es requerida'),
 	nombre: z.string().min(1, 'Nombre es requerido'),
 	apellido: z.string().min(1, 'Apellido es requerido'),
-	empresaId: z.string().uuid('ID de empresa inválido'),
+	empresaId: z.string().min(1, 'ID de empresa inválido'),
 	areaVisitada: z.string().min(1, 'Área visitada es requerida'),
 	motivo: z.string().min(1, 'Motivo es requerido'),
 	tipoAutorizacion: z.string().refine((val) => ['praind', 'correo'].includes(val.toLowerCase()), {
@@ -66,20 +66,20 @@ export const CreateIngresoProveedorSchema = z.object({
 	vehiculoPlaca: z.string().optional().nullable(),
 	gafeteNumero: z.string().optional().nullable(),
 	observaciones: z.string().max(500).optional().nullable(),
-	usuarioIngresoId: z.string().uuid('ID de usuario inválido')
+	usuarioIngresoId: z.string().min(1, 'ID de usuario inválido')
 });
 
 // Esquema para registrar salida
 export const RegistrarSalidaSchema = z.object({
-	ingresoId: z.string().uuid('ID de ingreso inválido'),
+	ingresoId: z.string().min(1, 'ID de ingreso inválido'),
 	devolvioGafete: z.boolean(),
-	usuarioSalidaId: z.string().uuid('ID de usuario inválido'),
+	usuarioSalidaId: z.string().min(1, 'ID de usuario inválido'),
 	observacionesSalida: z.string().max(500).optional().nullable()
 });
 
 // Esquema para resolver alerta
 export const ResolverAlertaSchema = z.object({
-	alertaId: z.string().uuid(),
+	alertaId: z.string().min(1),
 	notas: z.string().max(500).optional().nullable()
 });
 
