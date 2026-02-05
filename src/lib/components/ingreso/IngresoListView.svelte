@@ -197,6 +197,12 @@
 					loadIngresos();
 					clearCommand();
 					break;
+				case 'show-history':
+					if (viewMode !== 'history') {
+						toggleViewMode('history');
+					}
+					clearCommand();
+					break;
 			}
 		});
 	}

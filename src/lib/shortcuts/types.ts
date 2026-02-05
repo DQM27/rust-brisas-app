@@ -119,7 +119,8 @@ export type ShortcutCommand =
 	// Ingresos
 	| 'quick-entry'
 	| 'quick-exit'
-	| 'scan-badge';
+	| 'scan-badge'
+	| 'show-history';
 
 export interface ShortcutEvent {
 	command: ShortcutCommand;

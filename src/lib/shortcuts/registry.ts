@@ -206,7 +206,7 @@ class ShortcutRegistry {
 		for (const existing of allCodes) {
 			if (existing.shortcut.toLowerCase() === keys.toLowerCase()) {
 				// Encontrar la definición correspondiente
-				for (const [_, def] of this.shortcuts) {
+				for (const def of this.shortcuts.values()) {
 					if (def.keys.toLowerCase() === keys.toLowerCase()) {
 						// Es colisión si están en el mismo scope o uno es 'all'
 						if (def.scope === scope || def.scope === 'all' || scope === 'all') {

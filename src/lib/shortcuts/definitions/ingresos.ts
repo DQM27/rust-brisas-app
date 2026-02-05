@@ -46,5 +46,18 @@ export const ingresoShortcuts: ShortcutDefinition[] = [
 			e.preventDefault();
 			emitCommand('scan-badge');
 		}
+	},
+	{
+		id: 'show-history',
+		keys: 'f4',
+		label: 'Historial del Día',
+		description: 'Muestra el historial de ingresos del día',
+		category: 'ingresos',
+		scope: 'list',
+		icon: 'History',
+		handler: (e) => {
+			e.preventDefault();
+			emitCommand('show-history');
+		}
 	}
 ];

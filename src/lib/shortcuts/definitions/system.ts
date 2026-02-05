@@ -8,7 +8,7 @@ import type { ShortcutDefinition } from '../types';
 import { showSpotlight, showShortcutsHelp, showQuickSwitch } from '$lib/stores/ui';
 import { toggleTheme } from '$lib/stores/themeStore';
 import { logout } from '$lib/stores/auth';
-import { activeTabId, closeTab } from '$lib/stores/tabs';
+import { activeTabId, closeTab, tabsStore } from '$lib/stores/tabs';
 import { get } from 'svelte/store';
 import { sessionSettings } from '$lib/stores/sessionSettingsStore';
 
@@ -107,6 +107,42 @@ export const systemShortcuts: ShortcutDefinition[] = [
 			} catch {
 				if (confirm('¿Cerrar sesión ahora?')) logout('User Logout (Shortcut)');
 			}
+		}
+	},
+	{
+		id: 'prev-tab',
+		keys: 'alt+left',
+		label: 'Pestaña Anterior',
+		description: 'Navega a la pestaña anterior',
+		category: 'system',
+		scope: 'all',
+		icon: 'ChevronLeft',
+		handler: (e) => {
+			e.preventDefault();
+			const tabs = get(tabsStore);
+			if (tabs.length < 2) return;
+			const currentId = get(activeTabId);
+			const currentIndex = tabs.findIndex((t) => t.id === currentId);
+			const prevIndex = currentIndex <= 0 ? tabs.length - 1 : currentIndex - 1;
+			activeTabId.set(tabs[prevIndex].id);
+		}
+	},
+	{
+		id: 'next-tab',
+		keys: 'alt+right',
+		label: 'Pestaña Siguiente',
+		description: 'Navega a la siguiente pestaña',
+		category: 'system',
+		scope: 'all',
+		icon: 'ChevronRight',
+		handler: (e) => {
+			e.preventDefault();
+			const tabs = get(tabsStore);
+			if (tabs.length < 2) return;
+			const currentId = get(activeTabId);
+			const currentIndex = tabs.findIndex((t) => t.id === currentId);
+			const nextIndex = currentIndex >= tabs.length - 1 ? 0 : currentIndex + 1;
+			activeTabId.set(tabs[nextIndex].id);
 		}
 	}
 ];
