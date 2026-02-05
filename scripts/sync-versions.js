@@ -44,8 +44,13 @@ function sync() {
 		if (fs.existsSync(PATHS.cargo)) {
 			let cargoToml = fs.readFileSync(PATHS.cargo, 'utf8');
 			// Reemplaza la versión en la sección [package]
-			cargoToml = cargoToml.replace(/^version = ".*"/m, `version = "${version}"`);
-			fs.writeFileSync(PATHS.cargo, cargoToml);
+			const newCargoToml = cargoToml.replace(/^version = ".*"/m, `version = "${version}"`);
+
+			if (cargoToml === newCargoToml) {
+				throw new Error('No se pudo encontrar la línea de versión en src-tauri/Cargo.toml');
+			}
+
+			fs.writeFileSync(PATHS.cargo, newCargoToml);
 			console.log(green('  ✅ src-tauri/Cargo.toml actualizado'));
 
 			// 4. Forzar actualización de Cargo.lock (Muy importante para Rust)
