@@ -1,34 +1,15 @@
 <script lang="ts">
-	// @ts-ignore
-	import { onMount } from 'svelte';
-	import { isAuthenticated as authStore } from '$lib/stores/auth';
-	import { tabsStore, openTab } from '$lib/stores/tabs';
-	// @ts-ignore
-	import { get, type Writable } from 'svelte/store';
+	import { isAuthenticated } from '$lib/stores/auth';
 	import LoginPage from './LoginPage.svelte';
-	import Main from './MainContent.svelte';
-
-	const isAuthenticated = authStore as unknown as Writable<boolean>;
-
-	// Cuando se autentica, inicializar tabs
-	// @ts-ignore
-	$effect(() => {
-		if ($isAuthenticated) {
-			const tabs = get(tabsStore);
-			if (tabs.length === 0) {
-				openTab({
-					componentKey: 'welcome',
-					title: 'Bienvenida',
-					id: 'welcome'
-				});
-			}
-		}
-	});
+	import AppShell from '$lib/components/layout/AppShell.svelte';
 </script>
 
-<!-- @ts-ignore -->
+<!-- 
+  Access Control Layer: Single point of authentication check.
+  Routes to LoginPage or AppShell based on auth state.
+-->
 {#if !$isAuthenticated}
 	<LoginPage />
 {:else}
-	<Main />
+	<AppShell />
 {/if}

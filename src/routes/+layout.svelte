@@ -1,4 +1,8 @@
 <!-- src/routes/+layout.svelte -->
+<!-- 
+  System Shell: Bootstrap services and provide global providers.
+  This layout does NOT handle UI structure - that's AppShell's job.
+-->
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
@@ -7,15 +11,12 @@
 	import { initNetworkMonitor } from '$lib/stores/network';
 	import { setupWizardVisible } from '$lib/stores/ui';
 	import { modulesStore } from '$lib/stores/modules';
-	import { generalSettings } from '$lib/stores/settingsStore';
 	import { needsSetup } from '$lib/logic/keyring/keyringService';
 	import { windowService } from '$lib/logic/system/windowService';
 	import { auditService } from '$lib/logic/audit/auditService';
 	import { appApi } from '$lib/api/app';
 
-	// Components
-	import Sidebar from '$lib/components/layout/sidebar/Sidebar.svelte';
-	import StatusBar from '$lib/components/layout/StatusBar.svelte';
+	// Global Providers (invisible components)
 	import Toast from '$lib/components/Toast.svelte';
 	import SetupWizard from '$lib/components/setup/SetupWizard.svelte';
 	import GlobalUIProviders from '$lib/components/layout/GlobalUIProviders.svelte';
@@ -101,24 +102,10 @@
 	<SetupWizard onComplete={handleSetupComplete} />
 {:else}
 	<div class="flex flex-col h-screen bg-surface-1 text-primary overflow-hidden font-sans">
-		<div class="flex flex-1 w-full overflow-hidden bg-surface-1 md:flex-row flex-col">
-			{#if authenticated && !$generalSettings.isKioskMode}
-				<Sidebar />
-			{/if}
+		<Toast />
+		{@render children()}
 
-			<div class="flex-1 bg-surface-1 overflow-auto relative flex">
-				<Toast />
-				<div class="flex-1 w-full relative">
-					{@render children()}
-				</div>
-			</div>
-		</div>
-
-		{#if authenticated && !$generalSettings.isKioskMode}
-			<StatusBar />
-		{/if}
-
-		<!-- Managers & Providers -->
+		<!-- Global Managers & Providers -->
 		<ScreensaverManager />
 		<GlobalUIProviders {authenticated} />
 	</div>
