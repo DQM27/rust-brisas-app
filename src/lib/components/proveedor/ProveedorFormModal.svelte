@@ -96,10 +96,17 @@
 		}
 	);
 
-	// Sincronizar datos cuando cambia el proveedor
+	// Activar scope modal (separado para usar cleanup function)
 	$effect(() => {
 		if (show) {
 			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
+
+	// Sincronizar datos cuando cambia el proveedor
+	$effect(() => {
+		if (show) {
 			empresaStore.init();
 			const newData: CombinedForm = {
 				cedula: proveedor?.cedula ?? '',
@@ -111,8 +118,6 @@
 				estado: (proveedor?.estado as import('$lib/types/proveedor').EstadoProveedor) || 'ACTIVO'
 			};
 			reset({ data: newData });
-		} else {
-			shortcutRegistry.popScope();
 		}
 	});
 

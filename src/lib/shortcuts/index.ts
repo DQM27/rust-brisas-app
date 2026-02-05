@@ -46,3 +46,6 @@ export {
 	setActiveContext,
 	isContextActive
 } from './registry';
+
+// Hooks (activación automática de scopes)
+export { useListScope, useModalScope, useScope } from './hooks';

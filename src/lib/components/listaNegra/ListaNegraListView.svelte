@@ -18,7 +18,12 @@
 	import { can } from '$lib/logic/permissions';
 	import type { ListaNegraResponse, AddToListaNegraInput } from '$lib/types/listaNegra';
 	import { activeTabId } from '$lib/stores/tabs';
-	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
+	import {
+		shortcutCommand,
+		setActiveContext,
+		clearCommand,
+		shortcutRegistry
+	} from '$lib/shortcuts';
 	import { searchByType } from '$lib/api/searchService';
 
 	interface Props {
@@ -169,7 +174,10 @@
 	onDestroy(() => unsubscribeKeyboard?.());
 
 	$effect(() => {
-		if ($activeTabId === tabId) setActiveContext('lista-negra');
+		if ($activeTabId === tabId) {
+			shortcutRegistry.setScope('list');
+			setActiveContext('lista-negra');
+		}
 	});
 </script>
 

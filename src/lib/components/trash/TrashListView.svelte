@@ -8,6 +8,7 @@
 
 	import type { TrashService, TrashItem } from '$lib/logic/trash/trashService';
 	import TrashFormModal from './TrashFormModal.svelte';
+	import { shortcutRegistry, setActiveContext } from '$lib/shortcuts';
 
 	interface Props<T extends TrashItem> {
 		title?: string;
@@ -99,6 +100,9 @@
 
 	onMount(() => {
 		loadArchived();
+		// Activar scope de shortcuts
+		shortcutRegistry.setScope('list');
+		setActiveContext('trash-list');
 	});
 </script>
 

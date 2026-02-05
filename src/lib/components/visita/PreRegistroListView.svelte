@@ -11,6 +11,7 @@
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 	import type { PreRegistroVisita } from '$lib/types/ingreso-nuevos';
 	import IngresoVisitaFormModal from '$lib/components/ingreso/IngresoVisitaFormModal.svelte';
+	import { shortcutRegistry, setActiveContext } from '$lib/shortcuts';
 
 	interface Props {
 		showHeader?: boolean;
@@ -244,6 +245,9 @@
 
 	onMount(() => {
 		loadData();
+		// Activar scope de shortcuts
+		shortcutRegistry.setScope('list');
+		setActiveContext('preregistro-list');
 	});
 
 	// Auto-update toolbar columns when grid is ready or changes

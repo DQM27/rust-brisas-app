@@ -116,18 +116,23 @@
 		}
 	);
 
-	// Sync form with props when modal opens/changes
+	// Activar scope modal (separado para usar cleanup function)
 	$effect(() => {
 		if (show) {
 			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
+
+	// Sync form with props when modal opens/changes
+	$effect(() => {
+		if (show) {
 			if (contratista) {
 				reset({ data: initialData });
 			} else {
 				reset();
 				cedulaDuplicateError = null;
 			}
-		} else {
-			shortcutRegistry.popScope();
 		}
 	});
 

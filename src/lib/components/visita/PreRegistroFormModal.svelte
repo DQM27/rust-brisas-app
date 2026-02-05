@@ -4,6 +4,7 @@
 	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
 	import type { SearchResult } from '$lib/types/search.types';
 	import { slide, fly, fade, scale } from 'svelte/transition';
+	import { shortcutRegistry } from '$lib/shortcuts';
 
 	import {
 		X,
@@ -39,6 +40,14 @@
 
 	// State for ID tracking
 	let editingId = $state<string | null>(null);
+
+	// Activar scope modal
+	$effect(() => {
+		if (show) {
+			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
 
 	$effect(() => {
 		if (show) {

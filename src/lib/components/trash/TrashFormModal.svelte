@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { X, RotateCcw, Trash2 } from 'lucide-svelte';
+	import { shortcutRegistry } from '$lib/shortcuts';
 
 	interface TrashItem {
 		id: string;
@@ -35,6 +36,14 @@
 		action === 'restore' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'
 	);
 	const Icon = $derived(action === 'restore' ? RotateCcw : Trash2);
+
+	// Activar scope modal
+	$effect(() => {
+		if (show) {
+			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
 </script>
 
 {#if show}

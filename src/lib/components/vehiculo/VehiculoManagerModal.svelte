@@ -5,6 +5,7 @@
 	import type { VehiculoResponse, CreateVehiculoInput, TipoVehiculo } from '$lib/types/vehiculo';
 	import { vehiculos as vehiculosApi } from '$lib/api/vehiculos';
 	import { invoke } from '@tauri-apps/api/core';
+	import { shortcutRegistry } from '$lib/shortcuts';
 
 	// Superforms & Zod v4
 	import { superForm } from 'sveltekit-superforms';
@@ -72,6 +73,14 @@
 		if (show && propietarioId) {
 			loadVehiculos();
 			cancelForm();
+		}
+	});
+
+	// Activar scope modal
+	$effect(() => {
+		if (show) {
+			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
 		}
 	});
 

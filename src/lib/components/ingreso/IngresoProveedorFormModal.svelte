@@ -72,15 +72,18 @@
 		}
 	});
 
-	// Reset y Validar al abrir
+	// Activar scope modal (separado para usar cleanup function)
 	$effect(() => {
 		if (show) {
 			shortcutRegistry.pushScope('modal');
-			if (initialPerson) {
-				handlePersonSelect(initialPerson);
-			}
-		} else {
-			shortcutRegistry.popScope();
+			return () => shortcutRegistry.popScope();
+		}
+	});
+
+	// Reset y Validar al abrir
+	$effect(() => {
+		if (show && initialPerson) {
+			handlePersonSelect(initialPerson);
 		}
 	});
 

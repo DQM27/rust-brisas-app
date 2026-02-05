@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-5-french-toast';
 	import { AlertCircle, History, CheckCircle, Search, Filter } from 'lucide-svelte';
+	import { shortcutRegistry, setActiveContext } from '$lib/shortcuts';
 	import type { AlertaGafeteResponse } from '$lib/types/ingreso';
 	import { getAllAlertas, resolverAlerta } from '$lib/logic/alertaGafete/alertaGafeteService';
 	import { getAlertaGafeteColumns } from '$lib/logic/alertaGafete/alertaGafeteColumns';
@@ -114,6 +115,9 @@
 
 	onMount(() => {
 		loadAlerts();
+		// Activar scope al montar
+		shortcutRegistry.setScope('list');
+		setActiveContext('alerta-gafete-list');
 	});
 
 	$effect(() => {

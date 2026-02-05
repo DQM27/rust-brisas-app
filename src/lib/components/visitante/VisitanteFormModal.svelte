@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { fade, fly, scale } from 'svelte/transition';
 	import { X, User, Bike, Car, Plus, ChevronDown, Check } from 'lucide-svelte';
+	import { shortcutRegistry } from '$lib/shortcuts';
 	import { onMount, onDestroy } from 'svelte';
 	import type {
 		VisitanteResponse,
@@ -136,6 +137,14 @@
 			}
 		}
 	);
+
+	// Activar scope modal
+	$effect(() => {
+		if (show) {
+			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
 
 	// Sync form with props when modal opens/changes
 	$effect(() => {

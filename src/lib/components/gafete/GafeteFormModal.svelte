@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import { X, ChevronDown, Check } from 'lucide-svelte';
+	import { shortcutRegistry } from '$lib/shortcuts';
 	import type { GafeteResponse, CreateGafeteInput, UpdateGafeteInput } from '$lib/types/gafete';
 	import { gafeteSchema } from '$lib/schemas/gafeteSchema';
 
@@ -54,6 +55,14 @@
 			dropdownWidth = rect.width;
 		}
 	}
+
+	// Activar scope modal
+	$effect(() => {
+		if (show) {
+			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
 
 	// Cargar datos iniciales
 	$effect(() => {

@@ -3,6 +3,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import { X, User, CheckCircle, XCircle, ChevronDown, MonitorStop, Plus } from 'lucide-svelte';
+	import { shortcutRegistry } from '$lib/shortcuts';
 	import { get } from 'svelte/store';
 	import { currentUser } from '$lib/stores/auth';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
@@ -86,6 +87,14 @@
 	let selectedPersona = $state<any>(null); // Usamos any para flexibilidad con PersonaFinder
 
 	// Cargar datos en modo edición o resetear
+	// Activar scope modal
+	$effect(() => {
+		if (show) {
+			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
+
 	$effect(() => {
 		if (show) {
 			if (bloqueado) {

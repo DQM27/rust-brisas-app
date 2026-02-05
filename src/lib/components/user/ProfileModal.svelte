@@ -14,6 +14,7 @@
 	} from 'lucide-svelte';
 	import * as userService from '$lib/logic/user/userService';
 	import type { UserResponse } from '$lib/types/user';
+	import { shortcutRegistry } from '$lib/shortcuts';
 
 	interface Props {
 		show: boolean;
@@ -64,6 +65,14 @@
 					.join(' ')
 			: ''
 	);
+
+	// Activar scope modal
+	$effect(() => {
+		if (show) {
+			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
 </script>
 
 {#if show && user}

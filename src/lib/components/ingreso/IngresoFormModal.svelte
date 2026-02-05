@@ -3,6 +3,7 @@
 	import { fade, scale, slide } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import { X, ChevronDown, ChevronRight, Car, FileText, AlertTriangle } from 'lucide-svelte';
+	import { shortcutRegistry } from '$lib/shortcuts';
 
 	// Components
 	import PersonaFinder from './shared/persona/PersonaFinder.svelte';
@@ -100,6 +101,14 @@
 					if (personaFinderRef) personaFinderRef.focus();
 				}, 100);
 			}
+		}
+	});
+
+	// Activar scope 'modal' al abrir
+	$effect(() => {
+		if (show) {
+			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
 		}
 	});
 

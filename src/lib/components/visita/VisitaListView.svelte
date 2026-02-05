@@ -32,7 +32,12 @@
 	import { toast } from 'svelte-5-french-toast';
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId, openTab } from '$lib/stores/tabs';
-	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
+	import {
+		shortcutCommand,
+		setActiveContext,
+		clearCommand,
+		shortcutRegistry
+	} from '$lib/shortcuts';
 	import { getAvailableFormats, exportData } from '$lib/logic/export';
 
 	interface Props {
@@ -281,6 +286,7 @@
 
 	$effect(() => {
 		if ($activeTabId === tabId) {
+			shortcutRegistry.setScope('list');
 			setActiveContext('visita-list');
 		}
 	});

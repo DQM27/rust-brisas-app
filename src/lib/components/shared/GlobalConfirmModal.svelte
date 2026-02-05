@@ -2,6 +2,7 @@
 	import { fade, scale } from 'svelte/transition';
 	import { AlertTriangle, X, ShieldAlert, BadgeInfo } from 'lucide-svelte';
 	import { confirmState, closeConfirm } from '$lib/stores/confirm.svelte';
+	import { shortcutRegistry } from '$lib/shortcuts';
 
 	// Derived state for aesthetics
 	const { isOpen, options } = $derived(confirmState);
@@ -41,6 +42,14 @@
 			closeConfirm();
 		}
 	}
+
+	// Activar scope modal
+	$effect(() => {
+		if (confirmState.isOpen) {
+			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
 </script>
 
 {#if confirmState.isOpen}

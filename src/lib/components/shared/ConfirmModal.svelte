@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fade, scale } from 'svelte/transition';
 	import { AlertTriangle, X } from 'lucide-svelte';
+	import { shortcutRegistry } from '$lib/shortcuts';
 
 	interface Props {
 		show?: boolean;
@@ -48,6 +49,14 @@
 			onClose();
 		}
 	}
+
+	// Activar scope modal
+	$effect(() => {
+		if (show) {
+			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
 </script>
 
 {#if show}

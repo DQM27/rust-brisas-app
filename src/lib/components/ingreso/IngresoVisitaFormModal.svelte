@@ -165,10 +165,17 @@
 		}
 	);
 
-	// Sync y Reset al abrir
+	// Activar scope modal (separado para usar cleanup function)
 	$effect(() => {
 		if (show) {
 			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
+
+	// Sync y Reset al abrir
+	$effect(() => {
+		if (show) {
 			empresaStore.init();
 			if (initialPerson) {
 				fillPersonData(initialPerson);
@@ -178,8 +185,6 @@
 				showObservaciones = false;
 				foundPreRegistroId = undefined;
 			}
-		} else {
-			shortcutRegistry.popScope();
 		}
 	});
 

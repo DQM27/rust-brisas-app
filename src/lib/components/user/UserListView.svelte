@@ -27,7 +27,12 @@
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId } from '$lib/stores/tabs';
 	import { can } from '$lib/logic/permissions';
-	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
+	import {
+		shortcutCommand,
+		setActiveContext,
+		clearCommand,
+		shortcutRegistry
+	} from '$lib/shortcuts';
 
 	interface Props {
 		tabId: string;
@@ -394,6 +399,7 @@
 
 	$effect(() => {
 		if ($activeTabId === tabId) {
+			shortcutRegistry.setScope('list');
 			setActiveContext('users-list');
 		}
 	});

@@ -301,10 +301,17 @@
 		}
 	}
 
-	// Cargar datos del usuario cuando se abre en modo edición
+	// Activar scope modal (separado para usar cleanup function)
 	$effect(() => {
 		if (show) {
 			shortcutRegistry.pushScope('modal');
+			return () => shortcutRegistry.popScope();
+		}
+	});
+
+	// Cargar datos del usuario cuando se abre en modo edición
+	$effect(() => {
+		if (show) {
 			// Reset view modes
 			isChangingPassword = false;
 			loadRoles();
@@ -338,8 +345,6 @@
 				// Reset para creación
 				resetForm({ data: initialValues });
 			}
-		} else {
-			shortcutRegistry.popScope();
 		}
 	});
 

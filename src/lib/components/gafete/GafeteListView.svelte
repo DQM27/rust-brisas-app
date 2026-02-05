@@ -3,6 +3,8 @@
 	import { toast } from 'svelte-5-french-toast';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { Plus, X, ListPlus, LayoutGrid, AlertCircle } from 'lucide-svelte';
+	import { shortcutRegistry, setActiveContext } from '$lib/shortcuts';
+	import { activeTabId } from '$lib/stores/tabs';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -191,6 +193,14 @@
 	});
 
 	onDestroy(() => unlistenRefresh?.());
+
+	// Activar scope de shortcuts cuando la tab esté activa
+	$effect(() => {
+		if ($activeTabId === tabId) {
+			shortcutRegistry.setScope('list');
+			setActiveContext('gafete-list');
+		}
+	});
 </script>
 
 <div class="flex h-full flex-col relative bg-surface-1">
