@@ -4337,7 +4337,7 @@ dependencies = [
 
 [[package]]
 name = "mega-brisas"
-version = "1.0.13"
+version = "1.1.0"
 dependencies = [
  "argon2",
  "async-trait",
