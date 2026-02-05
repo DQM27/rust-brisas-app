@@ -115,6 +115,7 @@ export type ShortcutCommand =
 	| 'next-page'
 	| 'prev-page'
 	| 'first-page'
+	| 'last-page'
 	// Ingresos
 	| 'quick-entry'
 	| 'quick-exit'

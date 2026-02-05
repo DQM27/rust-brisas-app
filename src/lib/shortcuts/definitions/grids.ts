@@ -46,5 +46,31 @@ export const gridShortcuts: ShortcutDefinition[] = [
 			e.preventDefault();
 			emitCommand('first-page');
 		}
+	},
+	{
+		id: 'grid-last-page',
+		keys: 'end',
+		label: 'Última Página',
+		description: 'Navega a la última página del grid',
+		category: 'grids',
+		scope: 'grid',
+		icon: 'ChevronsDown',
+		handler: (e) => {
+			e.preventDefault();
+			emitCommand('last-page');
+		}
+	},
+	{
+		id: 'grid-open-selected',
+		keys: 'enter',
+		label: 'Abrir Seleccionado',
+		description: 'Abre o edita el elemento seleccionado',
+		category: 'grids',
+		scope: 'list',
+		icon: 'Edit',
+		handler: (e) => {
+			e.preventDefault();
+			emitCommand('edit');
+		}
 	}
 ];

@@ -73,7 +73,7 @@ export const systemShortcuts: ShortcutDefinition[] = [
 	},
 	{
 		id: 'show-shortcuts-help',
-		keys: 'shift+a',
+		keys: 'f1',
 		label: 'Ayuda de Atajos',
 		description: 'Muestra todos los atajos disponibles',
 		category: 'system',

@@ -3,7 +3,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import { X, User, CheckCircle, XCircle, ChevronDown, MonitorStop, Plus } from 'lucide-svelte';
-	import { shortcutRegistry } from '$lib/shortcuts';
+	import { shortcutRegistry, shortcutCommand, clearCommand } from '$lib/shortcuts';
 	import { get } from 'svelte/store';
 	import { currentUser } from '$lib/stores/auth';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
@@ -117,6 +117,21 @@
 				// Modo Creación (Reset)
 				reset();
 				selectedPersona = null;
+			}
+		}
+	});
+
+	// Handle global shortcuts
+	$effect(() => {
+		const cmd = $shortcutCommand;
+		if (show && !loading) {
+			if (cmd?.command === 'cancel') {
+				onClose();
+				clearCommand();
+			} else if (cmd?.command === 'save') {
+				const f = document.getElementById('lista-negra-form') as HTMLFormElement;
+				if (f) f.requestSubmit();
+				clearCommand();
 			}
 		}
 	});

@@ -229,9 +229,15 @@ class ShortcutRegistry {
 	// ============================================
 
 	/**
-	 * Cambiar el scope activo
+	 * Cambiar el scope activo (reemplaza el scope actual del stack)
 	 */
 	public setScope(scope: ShortcutScope): void {
+		// Actualizar el scopeStack para que popScope funcione correctamente
+		if (this.scopeStack.length > 0) {
+			this.scopeStack[this.scopeStack.length - 1] = scope;
+		} else {
+			this.scopeStack.push(scope);
+		}
 		hotkeys.setScope(scope);
 		activeScope.set(scope);
 		this.updateActiveShortcuts();
