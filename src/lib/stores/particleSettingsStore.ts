@@ -130,11 +130,32 @@ function createParticleSettingsStore() {
 		update,
 		reset: () => set({ ...DEFAULT_PARTICLE_SETTINGS, autoWeather: true }),
 
+
 		// Manual overrides disable auto-weather
 		updateCloudStyle: (style: 'cartoon' | 'soft') => update((s) => ({ ...s, cloudStyle: style, autoWeather: false })),
 		updateCloudOpacity: (opacity: number) => update((s) => ({ ...s, cloudOpacity: opacity, autoWeather: false })),
 		updateCloudCount: (count: number) => update((s) => ({ ...s, cloudCount: count, autoWeather: false })),
-		// ... other manual updates ...
+		updateCloudWindSpeed: (speed: number) => update((s) => ({ ...s, cloudWindSpeed: speed, autoWeather: false })),
+		updateCloudTurbulence: (turbulence: number) => update((s) => ({ ...s, cloudTurbulence: turbulence, autoWeather: false })),
+
+		updateMoonPhase: (phase: string) => update((s) => ({ ...s, moonPhase: phase, autoWeather: false })),
+		updateSunTimes: (sunrise: number, sunset: number) => update((s) => ({ ...s, sunrise, sunset, autoWeather: false })),
+		updateSunStyle: (style: string) => update((s) => ({ ...s, sunStyle: style, autoWeather: false })),
+
+		updateBokehCount: (count: number) => update((s) => ({ ...s, bokehCount: count, autoWeather: false })),
+		updateBokehOpacity: (opacity: number) => update((s) => ({ ...s, bokehMaxOpacity: opacity, autoWeather: false })),
+
+		updateWeatherDensity: (density: number) => update((s) => ({ ...s, weatherDensityMultiplier: density, autoWeather: false })),
+		updateWeatherSpeed: (speed: number) => update((s) => ({ ...s, weatherSpeedMultiplier: speed, autoWeather: false })),
+		updateWeatherSize: (size: number) => update((s) => ({ ...s, weatherSizeMultiplier: size, autoWeather: false })),
+		updateWeatherWind: (wind: number) => update((s) => ({ ...s, weatherWindInfluence: wind, autoWeather: false })),
+		updateWeatherTurbulence: (turbulence: number) => update((s) => ({ ...s, weatherTurbulence: turbulence, autoWeather: false })),
+
+		toggleMeteorShower: () => update((s) => ({ ...s, meteorShowerEnabled: !s.meteorShowerEnabled, autoWeather: false })),
+		updateStarCount: (count: number) => update((s) => ({ ...s, starCountMultiplier: count, autoWeather: false })),
+		updateStarTwinkle: (speed: number) => update((s) => ({ ...s, starTwinkleSpeed: speed, autoWeather: false })),
+		updateShootingStarFreq: (freq: number) => update((s) => ({ ...s, shootingStarFrequency: freq, autoWeather: false })),
+		updateShootingStarSpeed: (speed: number) => update((s) => ({ ...s, shootingStarSpeed: speed, autoWeather: false })),
 
 		applyWeatherConditions: (data: { code: number; temp: number; wind: number; text: string }) =>
 			update((s) => {
