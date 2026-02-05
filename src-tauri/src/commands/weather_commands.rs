@@ -33,8 +33,7 @@ pub async fn get_weather_data(lat: Option<f64>, lon: Option<f64>) -> Result<Weat
     let longitude = lon.unwrap_or(DEFAULT_LON);
 
     let url = format!(
-        "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current_weather=true",
-        latitude, longitude
+        "https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
     );
 
     // Hacemos el request asíncrono usando await

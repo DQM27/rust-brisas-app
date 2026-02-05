@@ -133,6 +133,7 @@ fn julian_date(date: chrono::DateTime<Utc>) -> f64 {
 fn calculate_sun_times(date: chrono::DateTime<Utc>, lat: f64, lon: f64) -> (f64, f64) {
     // 1. Convertir a Día Juliano del año (1-366)
     let start_of_year = Utc.with_ymd_and_hms(date.year(), 1, 1, 0, 0, 0).unwrap();
+    #[allow(clippy::cast_precision_loss)]
     let day_of_year = (date - start_of_year).num_days() as f64 + 1.0;
 
     // 2. Convertir Longitud a hora (-Oeste, +Este)
