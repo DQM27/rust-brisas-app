@@ -38,14 +38,14 @@ pub async fn get_weather_data(lat: Option<f64>, lon: Option<f64>) -> Result<Weat
     );
 
     // Hacemos el request asíncrono usando await
-    let response = reqwest::get(&url).await.map_err(|e| format!("Network error: {}", e))?;
+    let response = reqwest::get(&url).await.map_err(|e| format!("Network error: {e}"))?;
 
     if !response.status().is_success() {
         return Err(format!("API Error: {}", response.status()));
     }
 
     let weather_res: OpenMeteoResponse =
-        response.json().await.map_err(|e| format!("Parse error: {}", e))?;
+        response.json().await.map_err(|e| format!("Parse error: {e}"))?;
 
     let current = weather_res.current_weather;
     let condition = get_condition_text(current.weathercode);
