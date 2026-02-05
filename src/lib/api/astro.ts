@@ -7,6 +7,8 @@ export interface AstroData {
     illumination: number;
     age_days: number;
     location: string;
+    sunrise: number;
+    sunset: number;
 }
 
 export const astroApi = {
@@ -21,7 +23,9 @@ export const astroApi = {
                 moon_phase: 'full',
                 illumination: 1.0,
                 age_days: 15,
-                location: 'Error fallback'
+                location: 'Error fallback',
+                sunrise: 6.0,
+                sunset: 18.0
             };
         }
     }

@@ -68,6 +68,7 @@
 				const astro = await astroApi.getAstroData(); // Uses San Jose default if no coords provided
 				console.log('Moon Data:', astro);
 				particleSettings.updateMoonPhase(astro.moon_phase);
+				particleSettings.updateSunTimes(astro.sunrise, astro.sunset);
 			} catch (err) {
 				console.error('Failed to load astro data:', err);
 			}

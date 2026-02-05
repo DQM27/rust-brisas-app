@@ -49,15 +49,18 @@ export function updateCelestialSystem(
 	const hour = render.time;
 
 	// Calculate sun position
-	const sun = calculateSunPosition(hour, state.sun, render.timestamp);
+	const sunrise = render.celestialSettings.sunrise ?? TIME.DAWN_START;
+	const sunset = render.celestialSettings.sunset ?? TIME.DUSK_END;
+
+	const sun = calculateSunPosition(hour, state.sun, render.timestamp, sunrise, sunset);
 
 	// Calculate moon position
-	const moon = calculateMoonPosition(hour, state.moon);
+	const moon = calculateMoonPosition(hour, state.moon, sunset, sunrise); // Moon opposite to sun approx
 
 	// Show both during transitions
 	const showBoth =
-		(hour >= TIME.DAWN_START && hour < TIME.DAWN_END) ||
-		(hour >= TIME.DUSK_START && hour < TIME.DUSK_END);
+		(hour >= sunrise && hour < sunrise + 1) ||
+		(hour >= sunset - 1 && hour < sunset);
 
 	return { sun, moon, showBoth };
 }
@@ -88,15 +91,25 @@ export function renderCelestialSystem(
 // Sun Position & Rendering (estilo original - simple con glow parpadeante)
 // -----------------------------------------------------------------------------
 
-function calculateSunPosition(hour: number, _current: SunState, timestamp: number): SunState {
+function calculateSunPosition(
+	hour: number,
+	_current: SunState,
+	timestamp: number,
+	sunrise: number,
+	sunset: number
+): SunState {
 	let x = 50;
 	let y = CELESTIAL_CONFIG.ARC_BOTTOM;
 	let opacity = 0;
 
-	// Sun visible from DAWN_START to DUSK_END
-	if (hour >= TIME.DAWN_START && hour < TIME.DUSK_END) {
-		const duration = TIME.DUSK_END - TIME.DAWN_START;
-		const progress = (hour - TIME.DAWN_START) / duration;
+	// Sun visible from Sunrise to Sunset
+	// We add a small buffer for dawn/dusk visibility
+	const visibleStart = sunrise - 1;
+	const visibleEnd = sunset + 1;
+
+	if (hour >= visibleStart && hour < visibleEnd) {
+		const duration = visibleEnd - visibleStart;
+		const progress = (hour - visibleStart) / duration;
 
 		// X: -10% to 110%
 		x = -10 + progress * 120;
@@ -108,10 +121,10 @@ function calculateSunPosition(hour: number, _current: SunState, timestamp: numbe
 			arcHeight * (CELESTIAL_CONFIG.ARC_BOTTOM - CELESTIAL_CONFIG.ARC_TOP);
 
 		// Opacity: fade in/out en los bordes
-		if (progress < 0.08) {
-			opacity = progress / 0.08;
-		} else if (progress > 0.92) {
-			opacity = (1 - progress) / 0.08;
+		if (progress < 0.1) {
+			opacity = progress / 0.1;
+		} else if (progress > 0.9) {
+			opacity = (1 - progress) / 0.1;
 		} else {
 			opacity = 1;
 		}
@@ -211,25 +224,47 @@ function renderSun(
 // Moon Position & Rendering (estilo original - simple crescent con glow)
 // -----------------------------------------------------------------------------
 
-function calculateMoonPosition(hour: number, current: MoonState): MoonState {
+function calculateMoonPosition(
+	hour: number,
+	current: MoonState,
+	visibleStart?: number,
+	visibleEnd?: number
+): MoonState {
 	let x = 50;
 	let y = CELESTIAL_CONFIG.ARC_BOTTOM;
 	let opacity = 0;
 
-	// Moon visible from DUSK_START to DAWN_END (cruza medianoche)
+	// Moon logic: Generally visible when sun is NOT.
+	// We default to old constants if dynamic ones aren't passed (safety)
+	const start = visibleStart ?? TIME.DUSK_START;
+	const end = visibleEnd ?? TIME.DAWN_END;
+
+	// Normalize times for crossing midnight
+	// If start > end (e.g. 18:00 to 06:00), we handle wrap
+
+	let isVisible = false;
 	let progress = 0;
-	const isVisible = hour >= TIME.DUSK_START || hour < TIME.DAWN_END;
+
+	const nightDuration = (end < start) ? (24 - start + end) : (end - start);
+
+	if (end < start) {
+		// Normal night wrapping midnight (e.g. 18 to 6)
+		if (hour >= start) {
+			isVisible = true;
+			progress = (hour - start) / nightDuration;
+		} else if (hour < end) {
+			isVisible = true;
+			progress = (hour + (24 - start)) / nightDuration;
+		}
+	} else {
+		// Polar night or odd timing (start < end)
+		if (hour >= start && hour < end) {
+			isVisible = true;
+			progress = (hour - start) / nightDuration;
+		}
+	}
 
 	if (isVisible) {
-		// Calcular progreso (0 a 1 a través de la noche)
-		const nightDuration = 24 - TIME.DUSK_START + TIME.DAWN_END; // ~13 horas
-
-		if (hour >= TIME.DUSK_START) {
-			progress = (hour - TIME.DUSK_START) / nightDuration;
-		} else {
-			progress = (hour + (24 - TIME.DUSK_START)) / nightDuration;
-		}
-
 		// X: -10% to 110%
 		x = -10 + progress * 120;
 
@@ -240,10 +275,10 @@ function calculateMoonPosition(hour: number, current: MoonState): MoonState {
 			arcHeight * (CELESTIAL_CONFIG.ARC_BOTTOM - CELESTIAL_CONFIG.ARC_TOP);
 
 		// Opacity
-		if (progress < 0.08) {
-			opacity = progress / 0.08;
-		} else if (progress > 0.92) {
-			opacity = (1 - progress) / 0.08;
+		if (progress < 0.1) {
+			opacity = progress / 0.1;
+		} else if (progress > 0.9) {
+			opacity = (1 - progress) / 0.1;
 		} else {
 			opacity = 1;
 		}

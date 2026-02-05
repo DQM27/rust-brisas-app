@@ -1,6 +1,6 @@
 // src/commands/astro_commands.rs
 
-use chrono::{Datelike, TimeZone, Timelike, Utc};
+use chrono::{Datelike, Offset, TimeZone, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use std::f64::consts::PI;
 
@@ -14,6 +14,10 @@ pub struct AstroData {
     pub illumination: f64,  // 0.0 a 1.0 (Porcentaje iluminado)
     pub age_days: f64,      // Días desde luna nueva
     pub location: String,   // Debug info
+
+    // Solar Cycle (Local Hours, e.g., 6.25 = 6:15 AM)
+    pub sunrise: f64,
+    pub sunset: f64,
 }
 
 #[tauri::command]
@@ -21,20 +25,32 @@ pub async fn get_astro_data(lat: Option<f64>, lon: Option<f64>) -> Result<AstroD
     let latitude = lat.unwrap_or(DEFAULT_LAT);
     let longitude = lon.unwrap_or(DEFAULT_LON);
 
-    // Obtener fecha actual UTC
+    // Obtener fecha actual
     let now_utc = Utc::now();
+    let now_local = chrono::Local::now();
 
-    // Calcular datos lunares usando algoritmo astronómico (Meeus/Julian Date)
+    // Calcular datos lunares
     let (age, fraction) = calculate_moon_data(now_utc);
-
-    // Mapear a nombre de fase
     let phase_id = get_phase_name(age);
+
+    // Calcular datos solares (Salida y Puesta)
+    // Usamos el offset local para devolver la hora en el reloj del usuario
+    let offset_seconds = now_local.offset().fix().local_minus_utc();
+    let offset_hours = offset_seconds as f64 / 3600.0;
+
+    let (sunrise_utc, sunset_utc) = calculate_sun_times(now_utc, latitude, longitude);
+
+    // Convertir a hora local y normalizar (0-24)
+    let sunrise_local = (sunrise_utc + offset_hours).rem_euclid(24.0);
+    let sunset_local = (sunset_utc + offset_hours).rem_euclid(24.0);
 
     Ok(AstroData {
         moon_phase: phase_id,
         illumination: fraction,
         age_days: age,
         location: format!("Lat: {:.4}, Lon: {:.4}", latitude, longitude),
+        sunrise: sunrise_local,
+        sunset: sunset_local,
     })
 }
 
@@ -70,7 +86,6 @@ fn get_phase_name(age: f64) -> String {
     "waning-crescent".to_string()
 }
 
-/// Calcula edad lunar y fracción iluminada
 fn calculate_moon_data(date: chrono::DateTime<Utc>) -> (f64, f64) {
     let jd = julian_date(date);
     let days_since_new = (jd - 2451550.1) / 29.53058867;
@@ -112,4 +127,82 @@ fn julian_date(date: chrono::DateTime<Utc>) -> f64 {
         + (date.second() as f64 / 86400.0);
 
     jd_day + fraction
+}
+
+/// Calcula Sunrise y Sunset (UTC Hours) usando Algoritmo NOAA
+fn calculate_sun_times(date: chrono::DateTime<Utc>, lat: f64, lon: f64) -> (f64, f64) {
+    // 1. Convertir a Día Juliano del año (1-366)
+    let start_of_year = Utc.with_ymd_and_hms(date.year(), 1, 1, 0, 0, 0).unwrap();
+    let day_of_year = (date - start_of_year).num_days() as f64 + 1.0;
+
+    // 2. Convertir Longitud a hora (-Oeste, +Este)
+    let lng_hour = lon / 15.0;
+
+    // 3. Calcular tiempos aproximados
+    // Sunrise (t) = N + ((6 - lngHour) / 24)
+    // Sunset (t) = N + ((18 - lngHour) / 24)
+    let t_rise = day_of_year + ((6.0 - lng_hour) / 24.0);
+    let t_set = day_of_year + ((18.0 - lng_hour) / 24.0);
+
+    // Helper para cálculos solares
+    let sun_calc = |t: f64| -> (f64, f64) {
+        // Mean Anomaly
+        let m = (0.9856 * t) - 3.289;
+
+        // True Longitude
+        let l =
+            m + (1.916 * (m.to_radians()).sin()) + (0.020 * (2.0 * m).to_radians().sin()) + 282.634;
+        let l = (l + 360.0) % 360.0;
+
+        // Right Ascension
+        let mut ra = (l.to_radians().tan()).atan().to_degrees();
+        ra = (ra + 360.0) % 360.0;
+
+        // Ajustar cuadrante de RA
+        let l_quad = (l / 90.0).floor() * 90.0;
+        let ra_quad = (ra / 90.0).floor() * 90.0;
+        ra = ra + (l_quad - ra_quad);
+        ra = ra / 15.0; // Convertir a horas
+
+        // Sin Declination & Cos Declination
+        let sin_dec = 0.39782 * l.to_radians().sin();
+        (ra, sin_dec)
+    };
+
+    // Zenith oficial = 90 grados 50 minutos
+    let zenith: f64 = 90.833;
+
+    // Calcular Sunrise
+    let (ra_rise, sin_dec_rise) = sun_calc(t_rise);
+    let cos_dec_rise = sin_dec_rise.asin().cos();
+
+    let cos_h_rise = (zenith.to_radians().cos() - (sin_dec_rise * lat.to_radians().sin()))
+        / (cos_dec_rise * lat.to_radians().cos());
+
+    // Validar noche polar o sol de medianoche
+    if cos_h_rise > 1.0 || cos_h_rise < -1.0 {
+        return (6.0, 18.0); // Fallback si no hay sunrise/sunset (polos)
+    }
+
+    // Sunrise Hour Angle
+    let h_rise = (360.0 - (cos_h_rise.acos().to_degrees())) / 15.0;
+
+    // Local Mean Time UTC
+    let t_rise_mid = h_rise + ra_rise - (0.06571 * t_rise) - 6.622;
+    let mut ut_rise = t_rise_mid - lng_hour;
+    ut_rise = (ut_rise + 24.0) % 24.0;
+
+    // Calcular Sunset (mismo proceso, diferente Hour Angle)
+    let (ra_set, sin_dec_set) = sun_calc(t_set);
+    let cos_dec_set = sin_dec_set.asin().cos();
+    let cos_h_set = (zenith.to_radians().cos() - (sin_dec_set * lat.to_radians().sin()))
+        / (cos_dec_set * lat.to_radians().cos());
+
+    let h_set = (cos_h_set.acos().to_degrees()) / 15.0;
+
+    let t_set_mid = h_set + ra_set - (0.06571 * t_set) - 6.622;
+    let mut ut_set = t_set_mid - lng_hour;
+    ut_set = (ut_set + 24.0) % 24.0;
+
+    (ut_rise, ut_set)
 }

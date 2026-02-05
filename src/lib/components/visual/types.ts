@@ -34,6 +34,8 @@ export interface RenderState {
 	celestialSettings: {
 		moonPhase: string;
 		sunStyle: string;
+		sunrise: number;
+		sunset: number;
 	};
 	starSettings: {
 		countMultiplier: number;

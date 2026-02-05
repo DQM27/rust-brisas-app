@@ -167,7 +167,9 @@
 			},
 			celestialSettings: {
 				moonPhase: $particleSettings.moonPhase,
-				sunStyle: $particleSettings.sunStyle
+				sunStyle: $particleSettings.sunStyle,
+				sunrise: $particleSettings.sunrise,
+				sunset: $particleSettings.sunset
 			},
 			starSettings: {
 				countMultiplier: $particleSettings.starCountMultiplier,

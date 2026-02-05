@@ -19,6 +19,8 @@ export interface ParticleSettings {
 	weatherTurbulence: number;
 	moonPhase: string;
 	sunStyle: string;
+	sunrise: number;
+	sunset: number;
 	starCountMultiplier: number;
 	starTwinkleSpeed: number;
 	shootingStarFrequency: number;
@@ -45,6 +47,8 @@ export const DEFAULT_PARTICLE_SETTINGS: ParticleSettings = {
 	weatherTurbulence: 1.0,
 	moonPhase: 'full',
 	sunStyle: 'normal',
+	sunrise: 6.0,
+	sunset: 18.0,
 	starCountMultiplier: 1.0,
 	starTwinkleSpeed: 1.0,
 	shootingStarFrequency: 1.0,
@@ -128,6 +132,7 @@ function createParticleSettingsStore() {
 		updateWeatherWind: (m: number) => update((s) => ({ ...s, weatherWindInfluence: m })),
 		updateWeatherTurbulence: (m: number) => update((s) => ({ ...s, weatherTurbulence: m })),
 		updateMoonPhase: (phase: string) => update((s) => ({ ...s, moonPhase: phase })),
+		updateSunTimes: (sunrise: number, sunset: number) => update((s) => ({ ...s, sunrise, sunset })),
 		updateSunStyle: (style: string) => update((s) => ({ ...s, sunStyle: style })),
 		updateStarCount: (m: number) => update((s) => ({ ...s, starCountMultiplier: m })),
 		updateStarTwinkle: (m: number) => update((s) => ({ ...s, starTwinkleSpeed: m })),
