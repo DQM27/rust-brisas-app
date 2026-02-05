@@ -256,6 +256,10 @@ macro_rules! register_handlers {
             // COMANDOS DE RED
             // ==========================================
             commands::network_commands::get_local_ip,
+            // ==========================================
+            // COMANDOS DE ASTRONOMÍA
+            // ==========================================
+            commands::astro_commands::get_astro_data,
         ]
     };
 }

@@ -7,6 +7,7 @@
 pub mod app_commands;
 pub mod backup;
 
+pub mod astro_commands;
 pub mod audio_commands;
 pub mod audit_commands;
 pub mod config_commands;

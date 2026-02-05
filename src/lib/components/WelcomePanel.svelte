@@ -16,6 +16,8 @@
 	import Landscape from '$lib/components/visual/Landscape.svelte';
 	import BirthdayCelebration from '$lib/components/visual/BirthdayCelebration.svelte';
 	import { getCurrentWindow } from '@tauri-apps/api/window';
+	import { astroApi } from '$lib/api/astro';
+	import { particleSettings } from '$lib/stores/particleSettingsStore';
 
 	// Load ingreso data on mount
 	let wakeLock: WakeLockSentinel | null = null;
@@ -60,6 +62,15 @@
 		(async () => {
 			ingresoStore.load();
 			requestWakeLock();
+
+			// Load Real Moon Phase 🌑🌒🌓🌔🌕🌖🌗🌘
+			try {
+				const astro = await astroApi.getAstroData(); // Uses San Jose default if no coords provided
+				console.log('Moon Data:', astro);
+				particleSettings.updateMoonPhase(astro.moon_phase);
+			} catch (err) {
+				console.error('Failed to load astro data:', err);
+			}
 			document.addEventListener('visibilitychange', handleVisibilityChange);
 
 			try {
