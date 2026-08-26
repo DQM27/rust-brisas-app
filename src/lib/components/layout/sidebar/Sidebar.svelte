@@ -12,8 +12,7 @@
 		ShieldX,
 		IdCard,
 		DoorOpen,
-		PackageCheck,
-		ScrollText
+		PackageCheck
 	} from '@lucide/svelte';
 
 	// Components
@@ -124,19 +123,6 @@
 				});
 			},
 			permission: 'lista_negra:view'
-		},
-		{
-			id: 'logs',
-			icon: ScrollText,
-			label: 'Logs',
-			action: () => {
-				openTab({
-					componentKey: 'audit-log',
-					title: 'Auditoría del Sistema',
-					id: 'audit-log',
-					focusOnOpen: true
-				});
-			}
 		}
 	];
 

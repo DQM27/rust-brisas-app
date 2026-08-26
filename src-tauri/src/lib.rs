@@ -112,19 +112,6 @@ pub fn run() {
                 if is_configured {
                     info!("🌱 Sistema configurado previamente. Verificando integridad de datos...");
 
-                    // AUDIT: Detect Unexpected Closure
-                    let terminal_id = {
-                        if let Ok(config) = config_state.read() {
-                            config.terminal.id.clone()
-                        } else {
-                            "UNKNOWN".to_string()
-                        }
-                    };
-
-                    if let Err(e) = detect_unexpected_closure(&terminal_id).await {
-                        error!("⚠️ Error al verificar cierre inesperado: {e}");
-                    }
-
                     // Pasamos config_state para controlar si ya se hizo el seed
                     if let Err(e) = seed::seed_db(config_state.clone()).await {
                         error!("❌ Error durante la verificación de datos iniciales: {e}");
@@ -197,8 +184,6 @@ pub fn run() {
                                 }
                             }
                             "quit" => {
-                                let session_state = app.state::<SessionState>();
-                                log_exit_event(app.app_handle(), &session_state, "Application Exit (Tray)");
                                 app.exit(0);
                             }
                             _ => {}
@@ -245,71 +230,4 @@ pub fn run() {
         .invoke_handler(register_handlers!())
         .run(tauri::generate_context!())
         .expect("Error al ejecutar la aplicación");
-}
-
-/// Helper to log exit event synchronously block
-fn log_exit_event(app: &tauri::AppHandle, session: &SessionState, reason: &str) {
-    if let Some(user) = session.get_user() {
-        let duration = session.get_duration_string();
-        let ip = session.get_ip();
-        let config_state = app.state::<AppConfigState>();
-
-        // We need to run async code in blocking context
-        tauri::async_runtime::block_on(async {
-            // 1. Get Terminal Info
-            let (terminal_id, terminal_name) = {
-                if let Ok(config) = config_state.read() {
-                    (config.terminal.id.clone(), config.terminal.nombre.clone())
-                } else {
-                    ("UNKNOWN".to_string(), "UNKNOWN".to_string())
-                }
-            };
-
-            // 2. Insert Log
-            use crate::db::surrealdb_audit_queries::insert_sys_log;
-            let _ = insert_sys_log(
-                terminal_id,
-                terminal_name,
-                user.full_name(), // Make sure full_name exists or use proper field
-                "LOGOUT".to_string(),
-                Some(duration),
-                ip,
-                Some(reason.to_string()),
-            )
-            .await;
-        });
-
-        // Clear session
-        session.clear();
-    }
-}
-
-/// Detects if the previous session ended unexpectedly (e.g. crash, power loss, Ctrl+C)
-async fn detect_unexpected_closure(terminal_id: &str) -> Result<(), Box<dyn std::error::Error>> {
-    use crate::db::surrealdb_audit_queries::{get_last_terminal_log, insert_sys_log};
-
-    // 1. Get last log for this terminal
-    if let Ok(Some(last_log)) = get_last_terminal_log(terminal_id).await {
-        // 2. If it was a LOGIN, and it happened more than 10 seconds ago (to avoid race during fast restart)
-        // or just if it was a LOGIN, it means no LOGOUT followed.
-        if last_log.event_type == "LOGIN" {
-            info!(
-                "🚨 Cierre inesperado detectado para la terminal: {terminal_id}. Registrando en auditoría..."
-            );
-
-            // 3. Log the anomaly
-            insert_sys_log(
-                last_log.terminal_id,
-                last_log.terminal_name,
-                last_log.user_name,
-                "LOGOUT".to_string(), // We categorize it as a LOGOUT event (end of session)
-                None, // We can't easily calculate duration without knowing exact crash time
-                last_log.ip_address,
-                Some("Unexpected Closure (Crash/Force Quit detected)".to_string()),
-            )
-            .await?;
-        }
-    }
-
-    Ok(())
 }

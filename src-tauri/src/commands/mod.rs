@@ -7,7 +7,6 @@
 pub mod app_commands;
 pub mod backup;
 
-pub mod audit_commands;
 pub mod config_commands;
 pub mod contratista_commands;
 pub mod system_commands;

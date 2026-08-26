@@ -298,7 +298,7 @@
 		<div class="rounded border border-emphasis bg-surface-1 p-3">
 			<div class="flex items-center justify-between mb-2">
 				<div>
-					<h4 class="text-sm font-medium text-primary">Experiencia y Auditoría</h4>
+					<h4 class="text-sm font-medium text-primary">Experiencia</h4>
 					<p class="text-[11px] text-secondary">Ajustes avanzados de seguridad y UX</p>
 				</div>
 			</div>
@@ -339,26 +339,6 @@
 							type="checkbox"
 							checked={$sessionSettings.enableGracePeriod}
 							onchange={() => sessionSettings.toggleGracePeriod()}
-							disabled={!canUpdate}
-							class="sr-only peer"
-						/>
-						<div
-							class="w-9 h-5 bg-gray-600/50 rounded-full peer peer-checked:bg-teal-500 peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform peer-checked:after:translate-x-full"
-						></div>
-					</label>
-				</div>
-
-				<!-- Audit Log -->
-				<div class="flex items-center justify-between border-t border-surface pt-2">
-					<div>
-						<div class="text-xs text-primary font-medium">Auditoría de Cierres</div>
-						<div class="text-[10px] text-secondary">Registra eventos de desconexión en el log</div>
-					</div>
-					<label class="relative inline-flex items-center cursor-pointer">
-						<input
-							type="checkbox"
-							checked={$sessionSettings.enableSessionAudit}
-							onchange={() => sessionSettings.toggleSessionAudit()}
 							disabled={!canUpdate}
 							class="sr-only peer"
 						/>

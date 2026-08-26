@@ -1,38 +1,22 @@
 // $lib/stores/auth.ts
-import { writable, get } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { resetTabs } from './tabs';
 import type { UserResponse } from '$lib/types/user';
-import { startSession, stopSession, getCurrentSessionDuration } from './sessionStore';
-import { sessionSettings } from './sessionSettingsStore';
-import { auditService } from '$lib/logic/audit/auditService';
+import { startSession, stopSession } from './sessionStore';
 
 // Session-only stores (NOT persisted - login required after app restart)
 export const isAuthenticated = writable<boolean>(false);
 export const currentUser = writable<UserResponse | null>(null);
 
-export function login(user: UserResponse, detail: string = 'User Login'): void {
+export function login(user: UserResponse, _detail: string = 'User Login'): void {
 	isAuthenticated.set(true);
 	currentUser.set(user);
 
 	// Start session monitoring (activity tracking and timeout checking)
 	startSession();
-
-	// Audit Logging
-	const settings = get(sessionSettings);
-	if (settings.enableSessionAudit) {
-		auditService.log('LOGIN', user.nombreCompleto, detail);
-	}
 }
 
-export async function logout(detail: string = 'User Logout'): Promise<void> {
-	// Audit Logout
-	const user = get(currentUser);
-	const settings = get(sessionSettings);
-	if (user && settings.enableSessionAudit) {
-		const duration = getCurrentSessionDuration();
-		await auditService.log('LOGOUT', user.nombreCompleto, detail, duration);
-	}
-
+export async function logout(_detail: string = 'User Logout'): Promise<void> {
 	// Stop session monitoring first
 	stopSession();
 

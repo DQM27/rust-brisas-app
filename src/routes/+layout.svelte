@@ -6,13 +6,11 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
-	import { get } from 'svelte/store';
-	import { isAuthenticated, currentUser } from '$lib/stores/auth';
+	import { isAuthenticated } from '$lib/stores/auth';
 	import { initNetworkMonitor } from '$lib/stores/network';
 	import { setupWizardVisible } from '$lib/stores/ui';
 	import { needsSetup } from '$lib/logic/keyring/keyringService';
 	import { windowService } from '$lib/logic/system/windowService';
-	import { auditService } from '$lib/logic/audit/auditService';
 	import { appApi } from '$lib/api/app';
 
 	// Global Providers (invisible components)
@@ -42,7 +40,6 @@
 		})();
 
 		const cleanupNetwork = initNetworkMonitor();
-		setupCloseHandler();
 
 		// Show window when frontend ready
 		appApi.showMainWindow().catch(console.error);
@@ -51,27 +48,6 @@
 			cleanupNetwork();
 		};
 	});
-
-	/**
-	 * Configura el cierre de la app para registrar auditoría
-	 */
-	async function setupCloseHandler() {
-		const { getCurrentWindow } = await import('@tauri-apps/api/window');
-		await getCurrentWindow().onCloseRequested(async () => {
-			const auth = get(isAuthenticated);
-			const user = get(currentUser);
-
-			if (auth && user) {
-				const { getCurrentSessionDuration } = await import('$lib/stores/sessionStore');
-				await auditService.log(
-					'LOGOUT',
-					user.nombreCompleto,
-					'Application Exit (Manual)',
-					getCurrentSessionDuration()
-				);
-			}
-		});
-	}
 
 	// Dynamic Window Management
 	$effect(() => {

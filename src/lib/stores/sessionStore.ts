@@ -4,7 +4,6 @@ import { sessionSettings } from './sessionSettingsStore';
 import { logout, currentUser } from './auth';
 import { openTab } from './tabs';
 import { getSystemIdleMinutes } from '$lib/services/systemIdleService';
-import { auditService } from '$lib/services/auditService';
 
 // =============================================================================
 // TYPES
@@ -370,19 +369,6 @@ export function getCurrentSessionDuration(): string {
  * Performs a complete logout (closes all tabs, clears session)
  */
 function performCompleteLogout(reason = 'Unknown'): void {
-	// Audit Logging
-	const settings = get(sessionSettings);
-	const user = get(currentUser);
-	const state = get(sessionState);
-
-	if (settings.enableSessionAudit && user) {
-		const durationMs = Date.now() - state.sessionStartTime;
-		const durationStr = formatDuration(durationMs);
-		const eventType = reason.includes('Timeout') ? 'TIMEOUT' : 'LOGOUT';
-
-		auditService.log(eventType, user.nombreCompleto, reason, durationStr);
-	}
-
 	// Stop all session monitoring
 	stopSession();
 

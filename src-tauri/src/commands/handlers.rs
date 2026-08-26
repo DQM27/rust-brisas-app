@@ -236,11 +236,6 @@ macro_rules! register_handlers {
             commands::shortcuts_commands::delete_user_shortcut,
             commands::shortcuts_commands::reset_user_shortcuts,
             // ==========================================
-            // COMANDOS DE AUDITORÍA
-            // ==========================================
-            commands::audit_commands::log_system_event,
-            commands::audit_commands::fetch_system_logs,
-            // ==========================================
             // COMANDOS DE RED
             // ==========================================
             commands::network_commands::get_local_ip,

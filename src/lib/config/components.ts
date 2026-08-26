@@ -33,7 +33,6 @@ import VisitaListView from '$lib/components/visita/VisitaListView.svelte';
 import VisitanteListView from '$lib/components/visitante/VisitanteListView.svelte';
 import UnderConstruction from '$lib/components/common/UnderConstruction.svelte';
 
-import AuditLogView from '$lib/components/audit/AuditLogView.svelte';
 
 /**
  * Registry central de componentes
@@ -71,8 +70,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
 	'ingreso-list': IngresoModule, // Point legacy/main link to new Module
 	'ingreso-module': IngresoModule,
 	'proveedor-ingreso-list': IngresoProveedorModule,
-	'under-construction': UnderConstruction,
-	'audit-log': AuditLogView
+	'under-construction': UnderConstruction
 };
 
 /**

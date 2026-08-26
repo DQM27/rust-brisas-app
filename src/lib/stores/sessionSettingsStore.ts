@@ -17,7 +17,6 @@ export interface SessionSettings {
 	enableLogoutShortcut: boolean;
 	// Enhancements
 	enablePreLogoutWarning: boolean;
-	enableSessionAudit: boolean;
 	enableGracePeriod: boolean;
 }
 
@@ -36,7 +35,6 @@ const DEFAULT_SETTINGS: SessionSettings = {
 	enableQuickSessionSwitch: true,
 	enableLogoutShortcut: true,
 	enablePreLogoutWarning: true,
-	enableSessionAudit: true,
 	enableGracePeriod: true
 };
 
@@ -97,7 +95,6 @@ function validateSettings(settings: SessionSettings): SessionSettings {
 	if (validated.enableQuickSessionSwitch === undefined) validated.enableQuickSessionSwitch = true;
 	if (validated.enableLogoutShortcut === undefined) validated.enableLogoutShortcut = true;
 	if (validated.enablePreLogoutWarning === undefined) validated.enablePreLogoutWarning = true;
-	if (validated.enableSessionAudit === undefined) validated.enableSessionAudit = true;
 	if (validated.enableGracePeriod === undefined) validated.enableGracePeriod = true;
 
 	return validated;
@@ -116,7 +113,6 @@ export interface SessionSettingsStore extends Writable<SessionSettings> {
 	toggleQuickSessionSwitch: () => void;
 	toggleLogoutShortcut: () => void;
 	togglePreLogoutWarning: () => void;
-	toggleSessionAudit: () => void;
 	toggleGracePeriod: () => void;
 	setAppLockTimeout: (minutes: number) => void;
 	setScreensaverTimeout: (minutes: number) => void;
@@ -157,8 +153,6 @@ function createSessionSettingsStore(): SessionSettingsStore {
 			update((s) => ({ ...s, enableLogoutShortcut: !s.enableLogoutShortcut })),
 		togglePreLogoutWarning: () =>
 			update((s) => ({ ...s, enablePreLogoutWarning: !s.enablePreLogoutWarning })),
-		toggleSessionAudit: () =>
-			update((s) => ({ ...s, enableSessionAudit: !s.enableSessionAudit })),
 		toggleGracePeriod: () =>
 			update((s) => ({ ...s, enableGracePeriod: !s.enableGracePeriod })),
 		setAppLockTimeout: (minutes: number) =>

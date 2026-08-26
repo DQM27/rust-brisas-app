@@ -27,5 +27,4 @@ export type ComponentKey =
 	| 'about'
 	| 'under-construction'
 	| 'spotlight-settings'
-	| 'alerta-gafete-list'
-	| 'audit-log';
+	| 'alerta-gafete-list';
