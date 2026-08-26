@@ -127,7 +127,22 @@ pub async fn login(
 }
 
 #[tauri::command]
-pub async fn change_password(id: String, input: ChangePasswordInput) -> Result<(), UserError> {
+pub async fn change_password(
+    session: State<'_, SessionState>,
+    id: String,
+    input: ChangePasswordInput,
+) -> Result<(), UserError> {
+    let actor = session.require_session()?;
+
+    if id == actor.id {
+        return user_service::change_password_by_email(&actor.email, input).await;
+    }
+
+    require_perm!(
+        session,
+        "users:change_password",
+        format!("Cambiando contraseña del usuario ID: {id}")
+    )?;
     user_service::change_password(id, input).await
 }
 

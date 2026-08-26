@@ -2,7 +2,7 @@
 // src/models/user.rs
 // ==========================================
 
-use crate::domain::role::GOD_ID;
+use crate::domain::role::{GOD_EMAIL, GOD_ID};
 use crate::models::role::Role;
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
@@ -296,6 +296,10 @@ pub struct UserResponse {
 impl UserResponse {
     pub fn from_user_with_role(u: User, role: Role, permissions: Vec<String>) -> Self {
         let role_name = role.name;
+        let user_id = u.id.to_string();
+        let is_superuser = u.email.eq_ignore_ascii_case(GOD_EMAIL)
+            || user_id == format!("user:{GOD_ID}")
+            || user_id == format!("user:⟨{GOD_ID}⟩");
 
         // Construir nombre completo
         let mut parts = vec![u.nombre.as_str()];
@@ -309,7 +313,7 @@ impl UserResponse {
         let nombre_completo = parts.join(" ");
 
         Self {
-            id: u.id.to_string(),
+            id: user_id,
             email: u.email,
             nombre: u.nombre,
             apellido: u.apellido,
@@ -317,8 +321,7 @@ impl UserResponse {
             role_id: u.role.to_string(),
             role_name,
             operacion: u.operacion,
-            is_superuser: u.id.to_string() == format!("user:{GOD_ID}")
-                || u.id.to_string() == format!("user:⟨{GOD_ID}⟩"), // Fallback robusto
+            is_superuser,
             permissions, // Now included
             is_active: u.is_active,
             created_at: u.created_at.to_string(),
@@ -345,6 +348,10 @@ impl UserResponse {
             Some(role) => (role.id.to_string(), role.name.clone()),
             None => ("unknown".to_string(), "Sin Rol".to_string()),
         };
+        let user_id = u.id.to_string();
+        let is_superuser = u.email.eq_ignore_ascii_case(GOD_EMAIL)
+            || user_id == format!("user:{GOD_ID}")
+            || user_id == format!("user:⟨{GOD_ID}⟩");
 
         // Construir nombre completo
         let mut parts = vec![u.nombre.as_str()];
@@ -358,7 +365,7 @@ impl UserResponse {
         let nombre_completo = parts.join(" ");
 
         Self {
-            id: u.id.to_string(),
+            id: user_id,
             email: u.email,
             nombre: u.nombre,
             apellido: u.apellido,
@@ -366,8 +373,7 @@ impl UserResponse {
             role_id,
             role_name,
             operacion: u.operacion,
-            is_superuser: u.id.to_string() == format!("user:{GOD_ID}")
-                || u.id.to_string() == format!("user:⟨{GOD_ID}⟩"),
+            is_superuser,
             permissions,
             is_active: u.is_active,
             created_at: u.created_at.to_string(),

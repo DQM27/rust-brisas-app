@@ -484,11 +484,20 @@ pub async fn get_archived_users() -> Result<UserListResponse, UserError> {
 /// Cambia la contraseña de un usuario, verificando la contraseña actual si es proporcionada.
 pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Result<(), UserError> {
     let user_resp = get_user_by_id(&id_str).await?;
-    let found = db::find_by_email_with_password(&user_resp.email)
+    change_password_by_email(&user_resp.email, input).await
+}
+
+/// Cambia la contraseña usando una identidad previamente autenticada.
+/// Evita reconstruir el `RecordId` enviado por el frontend durante el cambio forzado del login.
+pub async fn change_password_by_email(
+    email: &str,
+    input: ChangePasswordInput,
+) -> Result<(), UserError> {
+    let found = db::find_by_email_with_password(email)
         .await
         .map_err(|e| UserError::Database(e.to_string()))?;
 
-    let (_, current_hash) = found.ok_or(UserError::NotFound)?;
+    let (user, current_hash) = found.ok_or(UserError::NotFound)?;
 
     if let Some(current) = input.current_password {
         // 🚀 Verificación en hilo separado
@@ -498,7 +507,7 @@ pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Resu
             .await
             .map_err(|e| UserError::Internal(format!("Error de hilo: {e}")))??;
         if !is_valid {
-            error!("Fallo en cambio de contraseña para {id_str}: contraseña actual incorrecta.");
+            error!("Fallo en cambio de contraseña para {email}: contraseña actual incorrecta.");
             return Err(UserError::InvalidCurrentPassword);
         }
     }
@@ -511,8 +520,8 @@ pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Resu
         .await
         .map_err(|e| UserError::Internal(format!("Error de hilo: {e}")))??;
 
-    db::update_password(&parse_user_id(&id_str), &new_hash).await.map_err(|e| {
-        error!("Error al actualizar contraseña para el usuario {id_str}: {e}");
+    db::update_password(&user.id, &new_hash).await.map_err(|e| {
+        error!("Error al actualizar contraseña para el usuario {email}: {e}");
         UserError::Database(e.to_string())
     })?;
 

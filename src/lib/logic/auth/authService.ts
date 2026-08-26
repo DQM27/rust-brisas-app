@@ -44,6 +44,10 @@ function parseAuthError(err: unknown): { message: string; code?: string } {
 				message: 'Tu cuenta está desactivada. Contacta al administrador.',
 				code: 'USER_INACTIVE'
 			};
+		if (obj.type === 'NotFound')
+			return { message: 'No se encontró el usuario asociado a la sesión.', code: 'USER_NOT_FOUND' };
+		if (obj.type === 'InvalidCurrentPassword')
+			return { message: 'La contraseña actual es incorrecta.', code: 'INVALID_CURRENT_PASSWORD' };
 
 		return { message: msg, code };
 	}

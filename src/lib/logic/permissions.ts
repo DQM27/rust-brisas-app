@@ -26,7 +26,15 @@ export type Action = Permission;
 // ==========================================
 
 function isAdmin(user: UserResponse): boolean {
-	return user.roleId === ROLE_ADMIN_ID || user.roleId === `role:${ROLE_ADMIN_ID}`;
+	const normalizedRoleId = user.roleId
+		.replace(/^role:/i, '')
+		.replace(/^[⟨<]/, '')
+		.replace(/[⟩>]$/, '');
+
+	return (
+		normalizedRoleId === ROLE_ADMIN_ID ||
+		['admin', 'administrador'].includes(user.roleName.trim().toLowerCase())
+	);
 }
 
 function isSuperuser(user: UserResponse): boolean {
