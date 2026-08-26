@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Users, ShieldAlert, LogIn, HardHat, FileText, Settings } from 'lucide-svelte';
+	import { Users, ShieldAlert, LogIn, HardHat, FileText, Settings } from '@lucide/svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 	import { currentUser } from '$lib/stores/auth';

@@ -33,7 +33,6 @@ export interface GeneralSettings {
 
 	// === Notifications ===
 	showToasts: boolean;
-	enableNotificationSounds: boolean;
 	toastPosition: ToastPosition;
 }
 
@@ -57,7 +56,6 @@ const DEFAULT_SETTINGS: GeneralSettings = {
 	isKioskMode: false,
 	disableSetupWizard: false,
 	showToasts: true,
-	enableNotificationSounds: true,
 	toastPosition: 'bottom-right'
 };
 
@@ -122,7 +120,6 @@ export interface GeneralSettingsStore extends Writable<GeneralSettings> {
 	setLandscapeType: (type: GeneralSettings['landscapeType']) => void;
 	toggleSetupWizard: () => void;
 	toggleToasts: () => void;
-	toggleNotificationSounds: () => void;
 	setToastPosition: (position: ToastPosition) => void;
 }
 
@@ -170,8 +167,6 @@ function createGeneralSettingsStore(): GeneralSettingsStore {
 		setLandscapeType: (type) => update((s) => ({ ...s, landscapeType: type })),
 		toggleSetupWizard: () => update((s) => ({ ...s, disableSetupWizard: !s.disableSetupWizard })),
 		toggleToasts: () => update((s) => ({ ...s, showToasts: !s.showToasts })),
-		toggleNotificationSounds: () =>
-			update((s) => ({ ...s, enableNotificationSounds: !s.enableNotificationSounds })),
 		setToastPosition: (position) => update((s) => ({ ...s, toastPosition: position }))
 	};
 }

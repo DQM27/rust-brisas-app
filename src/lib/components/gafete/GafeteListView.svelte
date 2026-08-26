@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { toastService } from '$lib/services/toastService';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-	import { Plus, X, ListPlus, LayoutGrid, AlertCircle } from 'lucide-svelte';
+	import { Plus, X, ListPlus, LayoutGrid, AlertCircle } from '@lucide/svelte';
 	import { shortcutRegistry, setActiveContext } from '$lib/shortcuts';
 	import { activeTabId } from '$lib/stores/tabs';
 

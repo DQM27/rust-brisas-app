@@ -3,7 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { toastService } from '$lib/services/toastService';
-	import { AlertCircle, FileText, Users, History, X, LogIn, UserPlus } from 'lucide-svelte';
+	import { AlertCircle, FileText, Users, History, X, LogIn, UserPlus } from '@lucide/svelte';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';

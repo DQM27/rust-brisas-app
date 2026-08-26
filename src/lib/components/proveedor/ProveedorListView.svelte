@@ -3,7 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { toastService } from '$lib/services/toastService';
-	import { Plus, Pencil, Trash2, X, RotateCcw, History } from 'lucide-svelte';
+	import { Plus, Pencil, Trash2, X, RotateCcw, History } from '@lucide/svelte';
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
@@ -249,14 +249,14 @@
 
 	async function confirmDelete(proveedor: ProveedorResponse) {
 		openConfirm({
-			title: 'Mover a Papelera',
-			message: `¿Estás seguro de mover al proveedor "${proveedor.nombre}" a la papelera? Podrás recuperarlo más tarde.`,
+			title: 'Archivar proveedor',
+			message: `¿Estás seguro de archivar al proveedor "${proveedor.nombre}"?`,
 			type: 'danger',
-			confirmText: 'Mover a Papelera',
+			confirmText: 'Archivar',
 			onConfirm: async () => {
 				const res = await deleteProveedor(proveedor.id);
 				if (res.ok) {
-					toastService.success('Proveedor enviado a papelera');
+					toastService.success('Proveedor archivado');
 					loadData();
 				} else {
 					toastService.error(res.error);
@@ -287,9 +287,9 @@
 	async function handleDeleteMultiple(selection: ProveedorResponse[]) {
 		openConfirm({
 			title: 'Eliminación Múltiple',
-			message: `¿Estás seguro de mover ${selection.length} proveedores a la papelera?`,
+			message: `¿Estás seguro de archivar ${selection.length} proveedores?`,
 			type: 'danger',
-			confirmText: 'Mover a Papelera',
+			confirmText: 'Archivar',
 			onConfirm: async () => {
 				const toastId = toastService.loading('Eliminando...');
 				let errors = 0;
@@ -436,7 +436,7 @@
 					{#if showArchived}
 						<History size={14} /> Ver Activos
 					{:else}
-						<Trash2 size={14} /> Papelera
+						<Trash2 size={14} /> Archivados
 					{/if}
 				</button>
 

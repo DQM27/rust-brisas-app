@@ -16,7 +16,7 @@
 		Truck,
 		UserCircle,
 		FileText
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { personaQuickView } from '$lib/stores/ui';
 	import { openTab } from '$lib/stores/tabs';
 	import { toastService } from '$lib/services/toastService';

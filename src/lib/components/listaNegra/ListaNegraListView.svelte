@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { toastService } from '$lib/services/toastService';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-	import { Plus, RotateCw, Lock, LockOpen, UserPlus, Pencil, Ban } from 'lucide-svelte';
+	import { Plus, RotateCw, Lock, LockOpen, UserPlus, Pencil, Ban } from '@lucide/svelte';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';

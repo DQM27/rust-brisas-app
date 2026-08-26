@@ -11,7 +11,7 @@
 		Briefcase,
 		Shield,
 		PenSquare
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import * as userService from '$lib/logic/user/userService';
 	import type { UserResponse } from '$lib/types/user';
 	import { shortcutRegistry } from '$lib/shortcuts';

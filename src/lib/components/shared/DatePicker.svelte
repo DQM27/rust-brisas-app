@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-svelte';
+	import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from '@lucide/svelte';
 
 	interface Props {
 		value: string | undefined | null; // Allow flexible types

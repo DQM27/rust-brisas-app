@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, scale } from 'svelte/transition';
-	import { Plus } from 'lucide-svelte';
+	import { Plus } from '@lucide/svelte';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
 	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
 

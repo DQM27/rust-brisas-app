@@ -6,7 +6,7 @@
 	import type { SysLogEntry } from '$lib/types/audit';
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
-	import { RefreshCw, AlertCircle } from 'lucide-svelte';
+	import { RefreshCw, AlertCircle } from '@lucide/svelte';
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 
 	interface Props {

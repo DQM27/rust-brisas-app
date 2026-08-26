@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { fade, scale, slide } from 'svelte/transition';
-	import { X, LogOut, CheckCircle, XCircle, ChevronDown, ChevronRight } from 'lucide-svelte';
+	import { X, LogOut, CheckCircle, XCircle, ChevronDown, ChevronRight } from '@lucide/svelte';
 	import type { IngresoResponse } from '$lib/types/ingreso';
 	import type { IngresoProveedor, IngresoVisita } from '$lib/types/ingreso-nuevos';
 

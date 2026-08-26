@@ -168,7 +168,7 @@ use argon2::{
 };
 use base64::Engine;
 use chacha20poly1305::{
-    aead::{Aead, AeadCore, KeyInit},
+    aead::{Aead, Generate, KeyInit},
     ChaCha20Poly1305, Key, Nonce,
 };
 use sha2::{Digest, Sha256};
@@ -195,7 +195,8 @@ fn derive_key_from_password(password: &str, salt_str: &str) -> Result<Key, Keyri
         .hash_password_into(password.as_bytes(), salt.as_str().as_bytes(), &mut key_buffer)
         .map_err(|e| KeyringError::Message(format!("Error derivando llave: {e}")))?;
 
-    Ok(*Key::from_slice(&key_buffer))
+    Key::try_from(key_buffer.as_slice())
+        .map_err(|_| KeyringError::Message("Longitud de llave derivada inválida".to_string()))
 }
 
 /// Exporta el Master Key (Pepper) actual a un archivo cifrado con contraseña.
@@ -217,7 +218,7 @@ pub fn export_master_key(file_path: PathBuf, password: &str) -> KeyringResult<()
 
     // 2. Generar Salt y Nonce
     let salt = SaltString::generate(&mut OsRng);
-    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+    let nonce = Nonce::generate();
 
     // 3. Derivar llave de cifrado
     let key = derive_key_from_password(password, salt.as_str())?;
@@ -271,10 +272,11 @@ pub fn import_master_key(file_path: PathBuf, password: &str) -> KeyringResult<()
         .map_err(|e| KeyringError::Message(format!("Nonce inválido: {e}")))?;
     let ciphertext_bytes = hex::decode(&master_file.ciphertext)
         .map_err(|e| KeyringError::Message(format!("Ciphertext inválido: {e}")))?;
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    let nonce = Nonce::try_from(nonce_bytes.as_slice())
+        .map_err(|_| KeyringError::Message("Longitud de nonce inválida".to_string()))?;
 
     // 4. Descifrar Pepper
-    let decrypted_bytes = cipher.decrypt(nonce, ciphertext_bytes.as_ref()).map_err(|_| {
+    let decrypted_bytes = cipher.decrypt(&nonce, ciphertext_bytes.as_ref()).map_err(|_| {
         KeyringError::Message("Contraseña incorrecta o archivo corrupto".to_string())
     })?;
 

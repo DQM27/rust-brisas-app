@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { toastService } from '$lib/services/toastService';
-	import { AlertCircle, History, Users, FileText, UserPlus, LogIn, X } from 'lucide-svelte';
+	import { AlertCircle, History, Users, FileText, UserPlus, LogIn, X } from '@lucide/svelte';
 	import type { IngresoResponse } from '$lib/types/ingreso';
 
 	// Components

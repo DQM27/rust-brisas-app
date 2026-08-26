@@ -11,7 +11,7 @@
 		ArchiveRestore,
 		Key,
 		X
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { save, open, message, confirm } from '@tauri-apps/plugin-dialog';
 	import { relaunch } from '@tauri-apps/plugin-process';
 

@@ -7,7 +7,7 @@
 		closeTabsToRight
 	} from '$lib/stores/tabs';
 	import type { HydratedTab } from '$lib/types/tab';
-	import { X } from 'lucide-svelte';
+	import { X } from '@lucide/svelte';
 
 	import { generalSettings } from '$lib/stores/settingsStore';
 

@@ -12,7 +12,7 @@
 		Key,
 		Save,
 		CheckCircle2
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import * as roleService from '$lib/logic/role/roleService';
@@ -223,8 +223,7 @@
 		backup: 'Copias de Seguridad',
 		export: 'Exportación',
 		import: 'Importación',
-		config: 'Configuración',
-		trash: 'Papelera'
+		config: 'Configuración'
 	};
 
 	function translateModule(module: string): string {

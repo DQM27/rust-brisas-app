@@ -5,7 +5,6 @@
 /// (Windows Credential Manager, Linux Secret-tool, macOS Keychain) para
 /// garantizar que los datos sensibles (Avatares, etc.) permanezcan seguros.
 use crate::domain::errors::KeyringError;
-use rand::rngs::OsRng;
 use std::sync::OnceLock;
 
 /// Identificador único para localizar la llave en el almacén seguro del sistema operativo.
@@ -58,7 +57,7 @@ pub fn get_master_key() -> Result<&'static [u8; 32], KeyringError> {
 
 // Motores Criptográficos: Implementan algoritmos de alto desempeño
 use chacha20poly1305::{
-    aead::{Aead, AeadCore, KeyInit},
+    aead::{Aead, Generate, KeyInit},
     ChaCha20Poly1305, Nonce,
 };
 
@@ -66,7 +65,7 @@ use chacha20poly1305::{
 pub fn encrypt_data(data: &[u8]) -> Result<Vec<u8>, KeyringError> {
     let key = get_master_key()?;
     let cipher = ChaCha20Poly1305::new(key.into());
-    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+    let nonce = Nonce::generate();
 
     let ciphertext =
         cipher.encrypt(&nonce, data).map_err(|e| KeyringError::Message(e.to_string()))?;
@@ -88,11 +87,12 @@ pub fn decrypt_data(encrypted_data: &[u8]) -> Result<Vec<u8>, KeyringError> {
         ));
     }
 
-    let nonce = Nonce::from_slice(&encrypted_data[0..12]);
+    let nonce = Nonce::try_from(&encrypted_data[0..12])
+        .map_err(|_| KeyringError::Message("Longitud de nonce inválida".to_string()))?;
     let ciphertext = &encrypted_data[12..];
 
     let plaintext =
-        cipher.decrypt(nonce, ciphertext).map_err(|e| KeyringError::Message(e.to_string()))?;
+        cipher.decrypt(&nonce, ciphertext).map_err(|e| KeyringError::Message(e.to_string()))?;
 
     Ok(plaintext)
 }

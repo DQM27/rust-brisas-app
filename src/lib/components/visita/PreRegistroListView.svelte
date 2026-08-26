@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { toastService } from '$lib/services/toastService';
-	import { UserPlus, RefreshCw, X, Calendar, Search, LogIn, Pencil, Trash2 } from 'lucide-svelte';
+	import { UserPlus, RefreshCw, X, Calendar, Search, LogIn, Pencil, Trash2 } from '@lucide/svelte';
 	import type { ColumnDefinition } from 'tabulator-tables';
 
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';

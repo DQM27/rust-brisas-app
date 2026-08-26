@@ -20,7 +20,6 @@ import DeviceSettingsPanel from '$lib/components/settings/DeviceSettingsPanel.sv
 
 import SessionSettingsPanel from '$lib/components/settings/SessionSettingsPanel.svelte';
 import ExportSettingsPanel from '$lib/components/settings/ExportSettingsPanel.svelte';
-import TrashSettingsPanel from '$lib/components/settings/TrashSettingsPanel.svelte';
 import RolesSettingsPanel from '$lib/components/settings/RolesSettingsPanel.svelte';
 import ShortcutsSettingsPanel from '$lib/components/settings/ShortcutsSettingsPanel.svelte';
 
@@ -33,7 +32,6 @@ import IngresoProveedorModule from '$lib/components/ingreso/IngresoProveedorModu
 import VisitaListView from '$lib/components/visita/VisitaListView.svelte';
 import VisitanteListView from '$lib/components/visitante/VisitanteListView.svelte';
 import UnderConstruction from '$lib/components/common/UnderConstruction.svelte';
-import DevSettingsPanel from '$lib/components/settings/DevSettingsPanel.svelte';
 
 import AuditLogView from '$lib/components/audit/AuditLogView.svelte';
 
@@ -63,7 +61,6 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
 	'device-settings': DeviceSettingsPanel,
 	'session-settings': SessionSettingsPanel,
 	'export-settings': ExportSettingsPanel,
-	'trash-settings': TrashSettingsPanel,
 	'roles-settings': RolesSettingsPanel,
 	'shortcuts-settings': ShortcutsSettingsPanel,
 	about: UnderConstruction,
@@ -75,7 +72,6 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
 	'ingreso-module': IngresoModule,
 	'proveedor-ingreso-list': IngresoProveedorModule,
 	'under-construction': UnderConstruction,
-	'dev-settings': DevSettingsPanel,
 	'audit-log': AuditLogView
 };
 

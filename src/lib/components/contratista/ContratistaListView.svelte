@@ -20,7 +20,7 @@
 		X,
 		RotateCcw,
 		History
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { can } from '$lib/logic/permissions';
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId } from '$lib/stores/tabs';
@@ -524,10 +524,10 @@
 		}
 
 		openConfirm({
-			title: 'Mover a Papelera',
-			message: `¿Estás seguro de mover a "${contratista.nombreCompleto}" a la papelera? Podrás recuperarlo más tarde.`,
+			title: 'Archivar contratista',
+			message: `¿Estás seguro de archivar a "${contratista.nombreCompleto}"?`,
 			type: 'danger',
-			confirmText: 'Mover a Papelera',
+			confirmText: 'Archivar',
 			onConfirm: async () => {
 				const toastId = toastService.loading('Eliminando...');
 				const result = await contratistaService.deleteContratista(contratista.id);
@@ -552,9 +552,9 @@
 
 		openConfirm({
 			title: 'Eliminación Múltiple',
-			message: `¿Estás seguro de mover ${selection.length} contratistas a la papelera?`,
+			message: `¿Estás seguro de archivar ${selection.length} contratistas?`,
 			type: 'danger',
-			confirmText: 'Mover a Papelera',
+			confirmText: 'Archivar',
 			onConfirm: async () => {
 				const toastId = toastService.loading('Eliminando...');
 				let errors = 0;
@@ -862,7 +862,7 @@
 							{#if showArchived}
 								<History size={14} /> Ver Activos
 							{:else}
-								<Trash2 size={14} /> Papelera
+								<Trash2 size={14} /> Archivados
 							{/if}
 						</button>
 

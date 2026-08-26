@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { toastService } from '$lib/services/toastService';
-	import { AlertCircle, History, CheckCircle, Search, Filter } from 'lucide-svelte';
+	import { AlertCircle, History, CheckCircle, Search, Filter } from '@lucide/svelte';
 	import { shortcutRegistry, setActiveContext } from '$lib/shortcuts';
 	import type { AlertaGafeteResponse } from '$lib/types/ingreso';
 	import { getAllAlertas, resolverAlerta } from '$lib/logic/alertaGafete/alertaGafeteService';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, scale } from 'svelte/transition';
-	import { AlertTriangle, X } from 'lucide-svelte';
+	import { AlertTriangle, X } from '@lucide/svelte';
 	import { shortcutRegistry } from '$lib/shortcuts';
 
 	interface Props {

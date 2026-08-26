@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Lock } from 'lucide-svelte';
+	import { Lock } from '@lucide/svelte';
 	import { preventDefault } from 'svelte/legacy';
 	import { currentUser } from '$lib/stores/auth';
 	import {

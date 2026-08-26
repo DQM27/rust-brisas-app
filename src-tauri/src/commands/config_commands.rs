@@ -1,7 +1,7 @@
 /// Gestión de la Configuración Global de la Aplicación.
 ///
 /// Este módulo permite la persistencia y lectura de los ajustes del sistema,
-/// incluyendo la identidad de la terminal, preferencias de audio y otros
+/// incluyendo la identidad de la terminal y otros
 /// parámetros operativos almacenados en el archivo local TOML.
 use crate::config::manager::save_config;
 use crate::config::settings::{AppConfig, AppConfigState, TerminalConfig};
@@ -48,32 +48,6 @@ pub async fn update_terminal_config(
     info!("Configuración guardada en: {}", config_path.display());
 
     Ok(config_guard.terminal.clone())
-}
-
-/// Actualiza la preferencia del sonido de alerta del sistema.
-#[command]
-pub async fn update_audio_config(
-    config: State<'_, AppConfigState>,
-    alert_sound: String,
-) -> Result<(), ConfigError> {
-    info!("Actualizando configuración de audio: {alert_sound}");
-
-    let mut config_guard = config
-        .write()
-        .map_err(|e| ConfigError::Message(format!("Error al escribir configuración: {e}")))?;
-
-    config_guard.audio.alert_sound = alert_sound;
-
-    let config_path = if let Some(data_dir) = dirs::data_local_dir() {
-        data_dir.join("Brisas").join("brisas.toml")
-    } else {
-        std::path::PathBuf::from("./config/brisas.toml")
-    };
-
-    save_config(&config_guard, &config_path)
-        .map_err(|e| ConfigError::Message(format!("Error al guardar configuración: {e}")))?;
-
-    Ok(())
 }
 
 /// Obtiene la configuración de backup actual.

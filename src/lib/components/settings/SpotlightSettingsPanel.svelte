@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { spotlightSettings } from '$lib/stores/spotlightStore';
 	import { scale } from 'svelte/transition';
-	import { Check, X, Search, Database, List, Layers, Type, History } from 'lucide-svelte';
+	import { Check, X, Search, Database, List, Layers, Type, History } from '@lucide/svelte';
 	import { currentUser } from '$lib/stores/auth';
 	import { can } from '$lib/logic/permissions';
 

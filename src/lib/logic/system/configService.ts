@@ -15,45 +15,9 @@ export const configService = {
         }
     },
 
-    async updateAudioConfig(alertSound: string): Promise<ServiceResult<void>> {
-        try {
-            await configApi.updateAudioConfig(alertSound);
-            return { ok: true, data: undefined };
-        } catch (e) {
-            return { ok: false, error: String(e) };
-        }
-    },
-
-    async setUseCustomSound(useCustom: boolean): Promise<ServiceResult<void>> {
-        try {
-            await configApi.setUseCustomSound(useCustom);
-            return { ok: true, data: undefined };
-        } catch (e) {
-            return { ok: false, error: String(e) };
-        }
-    },
-
-    async uploadCustomSound(filePath: string): Promise<ServiceResult<string>> {
-        try {
-            const newPath = await configApi.uploadCustomSound(filePath);
-            return { ok: true, data: newPath };
-        } catch (e) {
-            return { ok: false, error: String(e) };
-        }
-    },
-
     async updateTerminalConfig(nombre: string, ubicacion: string): Promise<ServiceResult<void>> {
         try {
             await configApi.updateTerminalConfig(nombre, ubicacion);
-            return { ok: true, data: undefined };
-        } catch (e) {
-            return { ok: false, error: String(e) };
-        }
-    },
-
-    async playAlertSound(soundType?: string): Promise<ServiceResult<void>> {
-        try {
-            await configApi.playAlertSound(soundType);
             return { ok: true, data: undefined };
         } catch (e) {
             return { ok: false, error: String(e) };

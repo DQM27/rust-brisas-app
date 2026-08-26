@@ -15,7 +15,7 @@
 		Box,
 		LogIn,
 		Zap
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { toastService } from '$lib/services/toastService';

@@ -1,7 +1,7 @@
 <!-- src/lib/components/visitante/VisitanteFormModal.svelte -->
 <script lang="ts">
 	import { fade, fly, scale } from 'svelte/transition';
-	import { X, User, Bike, Car, Plus, ChevronDown, Check } from 'lucide-svelte';
+	import { X, User, Bike, Car, Plus, ChevronDown, Check } from '@lucide/svelte';
 	import { shortcutRegistry } from '$lib/shortcuts';
 	import { onMount, onDestroy } from 'svelte';
 	import type {

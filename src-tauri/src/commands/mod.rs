@@ -7,11 +7,9 @@
 pub mod app_commands;
 pub mod backup;
 
-pub mod audio_commands;
 pub mod audit_commands;
 pub mod config_commands;
 pub mod contratista_commands;
-pub mod module_commands;
 pub mod system_commands;
 
 pub mod empresa_commands;

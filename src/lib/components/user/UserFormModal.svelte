@@ -2,7 +2,7 @@
 <!-- Modal reutilizable para crear y editar usuarios -->
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
-	import { X, Camera, ChevronDown } from 'lucide-svelte';
+	import { X, Camera, ChevronDown } from '@lucide/svelte';
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { invoke } from '@tauri-apps/api/core';
 	import type { UserResponse, CreateUserInput, UpdateUserInput } from '$lib/types/user';

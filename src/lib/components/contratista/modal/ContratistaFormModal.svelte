@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, fly, scale } from 'svelte/transition';
-	import { X, Car, Plus, ChevronDown } from 'lucide-svelte';
+	import { X, Car, Plus, ChevronDown } from '@lucide/svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import type {
 		ContratistaResponse,

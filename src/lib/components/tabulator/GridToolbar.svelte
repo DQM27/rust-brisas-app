@@ -12,7 +12,7 @@
 		Filter,
 		Pin,
 		PinOff
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 
 	interface Props {

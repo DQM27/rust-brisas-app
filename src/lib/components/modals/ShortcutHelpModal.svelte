@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { activeShortcuts, getOrderedCategories, shortcutRegistry } from '$lib/shortcuts';
-	import type { ShortcutDefinition, CategoryMetadata } from '$lib/shortcuts';
+	import type { ShortcutDefinition } from '$lib/shortcuts';
 	import {
 		X,
 		Keyboard,
@@ -11,7 +11,7 @@
 		Table,
 		DoorOpen,
 		Zap
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { slide, fade } from 'svelte/transition';
 	import { createEventDispatcher } from 'svelte';
 

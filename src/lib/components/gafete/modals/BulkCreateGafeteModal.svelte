@@ -1,7 +1,7 @@
 <!-- src/lib/components/gafete/modals/BulkCreateGafeteModal.svelte -->
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
-	import { X, Plus, ChevronDown, Check } from 'lucide-svelte';
+	import { X, Plus, ChevronDown, Check } from '@lucide/svelte';
 	import type { CreateGafeteRangeInput } from '$lib/types/gafete';
 
 	interface Props {

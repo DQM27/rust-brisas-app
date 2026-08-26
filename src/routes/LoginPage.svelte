@@ -5,7 +5,7 @@
 	import { authService } from '$lib/logic/auth/authService';
 	import { toastService } from '$lib/services/toastService';
 	import type { UserResponse } from '$lib/types/user';
-	import { X } from 'lucide-svelte';
+	import { X } from '@lucide/svelte';
 	import { setWindowSize } from '$lib/logic/keyring/keyringService';
 
 	// Estado UI

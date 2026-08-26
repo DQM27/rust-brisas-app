@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import { X, Code2 } from 'lucide-svelte';
+	import { X, Code2 } from '@lucide/svelte';
 	import { scale } from 'svelte/transition';
 	import { APP_CONFIG } from '$lib/config/app';
 	import { getVersion } from '@tauri-apps/api/app';

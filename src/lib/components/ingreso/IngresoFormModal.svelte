@@ -2,7 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { fade, scale, slide } from 'svelte/transition';
 	import { toastService } from '$lib/services/toastService';
-	import { X, ChevronDown, ChevronRight, Car, FileText, AlertTriangle } from 'lucide-svelte';
+	import { X, ChevronDown, ChevronRight, Car, FileText, AlertTriangle } from '@lucide/svelte';
 	import { shortcutRegistry } from '$lib/shortcuts';
 
 	// Components

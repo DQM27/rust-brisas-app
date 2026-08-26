@@ -21,7 +21,7 @@
 		Umbrella,
 		Type,
 		Layout
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { LANDSCAPE_TYPES } from '$lib/components/visual/systems/landscapeData';
 	import { can } from '$lib/logic/permissions';
 	import { currentUser } from '$lib/stores/auth';

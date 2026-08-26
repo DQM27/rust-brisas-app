@@ -7,7 +7,6 @@ pub mod session;
 
 pub mod contratista_service;
 pub mod empresa_service;
-pub mod module_service;
 
 pub mod export_profile_service;
 pub mod export_service;

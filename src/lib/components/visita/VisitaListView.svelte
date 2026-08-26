@@ -10,7 +10,7 @@
 		UserPlus,
 		LogIn,
 		CalendarClock
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { scale } from 'svelte/transition';
 
 	// Components

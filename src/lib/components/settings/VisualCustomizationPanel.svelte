@@ -15,7 +15,7 @@
 		Building2,
 		Umbrella,
 		Mountain
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { generalSettings } from '$lib/stores/settingsStore';
 	import { particleSettings } from '$lib/stores/particleSettingsStore';
 	import { LANDSCAPE_TYPES } from '$lib/components/visual/systems/landscapeData';

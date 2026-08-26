@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, scale } from 'svelte/transition';
-	import { AlertTriangle, X, ShieldAlert, BadgeInfo } from 'lucide-svelte';
+	import { AlertTriangle, X, ShieldAlert, BadgeInfo } from '@lucide/svelte';
 	import { confirmState, closeConfirm } from '$lib/stores/confirm.svelte';
 	import { shortcutRegistry } from '$lib/shortcuts';
 

@@ -1,12 +1,11 @@
 import { toast } from 'svelte-5-french-toast';
 import { get } from 'svelte/store';
 import { generalSettings } from '../stores/settingsStore';
-import { configService } from '../logic/system/configService';
 import CustomToast from '../components/shared/CustomToast.svelte';
 
 /**
  * Servicio centralizado para manejar notificaciones (toasts).
- * Abstrae svelte-5-french-toast e integra preferencias de usuario y sonidos automáticos.
+ * Abstrae svelte-5-french-toast e integra las preferencias visuales del usuario.
  */
 export const toastService = {
     /**
@@ -14,11 +13,6 @@ export const toastService = {
      */
     success(message: string, options: any = {}) {
         const settings = get(generalSettings);
-
-        // Reproducir sonido de éxito si está habilitado
-        if (settings.enableNotificationSounds) {
-            configService.playAlertSound('success').catch((e) => console.error('Error playing sound:', e));
-        }
 
         if (!settings.showToasts) return '';
 
@@ -38,12 +32,7 @@ export const toastService = {
      */
     error(message: string, options: { playSound?: boolean;[key: string]: any } = { playSound: true }) {
         const settings = get(generalSettings);
-        const { playSound = true, ...restOptions } = options;
-
-        // Reproducir sonido usando el servicio de configuración (Arquitectura centralizada)
-        if (playSound && settings.enableNotificationSounds) {
-            configService.playAlertSound('error').catch((e) => console.error('Error playing sound:', e));
-        }
+        const { playSound: _playSound, ...restOptions } = options;
 
         if (!settings.showToasts) return '';
 
@@ -69,11 +58,6 @@ export const toastService = {
      */
     info(message: string, options: any = {}) {
         const settings = get(generalSettings);
-
-        // Reproducir sonido informativo si está habilitado
-        if (settings.enableNotificationSounds) {
-            configService.playAlertSound('info').catch((error) => console.error('Error playing sound:', error));
-        }
 
         if (!settings.showToasts) return '';
 

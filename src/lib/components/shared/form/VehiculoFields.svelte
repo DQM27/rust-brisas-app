@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Truck } from 'lucide-svelte';
+	import { Truck } from '@lucide/svelte';
 	import { invoke } from '@tauri-apps/api/core';
 
 	interface Props {

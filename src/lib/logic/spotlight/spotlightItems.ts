@@ -25,7 +25,7 @@ import {
 	MODULE_COMPONENT_MAP,
 	TAB_ICON
 } from '$lib/logic/spotlight/spotlightDefinitions';
-import { User, Building2, ShieldCheck, Mail, IdCard, Search } from 'lucide-svelte';
+import { User, Building2, ShieldCheck, Mail, IdCard, Search } from '@lucide/svelte';
 import type { Permission } from '$lib/logic/permissions';
 
 // Re-export types for convenience

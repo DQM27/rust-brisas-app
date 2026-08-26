@@ -9,7 +9,7 @@ export interface SpotlightItem {
 	id: string;
 	label: string;
 	description?: string;
-	icon: any; // Componente Svelte (lucide-svelte)
+	icon: any; // Componente Svelte (@lucide/svelte)
 	category: SpotlightCategory;
 	subCategory?: SpotlightSubCategory;
 	action: () => void;
@@ -24,7 +24,7 @@ export interface SpotlightItemDefinition {
 	id: string;
 	label: string;
 	description?: string;
-	icon: any; // Componente Svelte (lucide-svelte)
+	icon: any; // Componente Svelte (@lucide/svelte)
 	category: SpotlightCategory;
 	subCategory?: SpotlightSubCategory;
 	keywords?: string[];

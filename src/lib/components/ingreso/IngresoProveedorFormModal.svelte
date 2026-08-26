@@ -2,7 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { fade, scale, slide } from 'svelte/transition';
 	import { toastService } from '$lib/services/toastService';
-	import { X, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-svelte';
+	import { X, ChevronDown, ChevronRight, AlertTriangle } from '@lucide/svelte';
 	import { shortcutRegistry, shortcutCommand } from '$lib/shortcuts';
 	import { onMount } from 'svelte';
 
@@ -112,7 +112,6 @@
 			}
 
 			if (!validationResult.puedeIngresar) {
-				invoke('play_alert_sound');
 				toastService.error(validationResult.motivoRechazo || 'Proveedor no autorizado');
 			}
 		} catch (e: unknown) {

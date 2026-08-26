@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { fade, scale } from 'svelte/transition';
 	import { onMount, onDestroy } from 'svelte';
-	import { Search, Database, History } from 'lucide-svelte';
+	import { Search, Database, History } from '@lucide/svelte';
 
 	// Import logic
 	import {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RotateCcw } from 'lucide-svelte';
+	import { RotateCcw } from '@lucide/svelte';
 	import { sessionSettings } from '$lib/stores/sessionSettingsStore';
 	import { can } from '$lib/logic/permissions';
 	import { currentUser } from '$lib/stores/auth';

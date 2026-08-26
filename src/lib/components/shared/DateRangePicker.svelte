@@ -1,7 +1,7 @@
 <script lang="ts">
 	// @ts-nocheck - Svelte 5 runes not recognized by TS
 	import { createEventDispatcher } from 'svelte';
-	import { Calendar, ChevronDown } from 'lucide-svelte';
+	import { Calendar, ChevronDown } from '@lucide/svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 

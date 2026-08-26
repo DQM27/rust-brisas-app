@@ -10,7 +10,7 @@
 		ArrowLeft,
 		Loader2,
 		UserRoundPen
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { showQuickSwitch, quickSwitchTarget } from '$lib/stores/ui';
 	import { invoke } from '@tauri-apps/api/core';
 

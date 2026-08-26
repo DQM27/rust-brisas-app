@@ -15,8 +15,8 @@ use super::templates;
 
 // IMPORTS DE TYPST 0.14
 use typst::diag::{FileError, FileResult};
-use typst::foundations::{Bytes, Datetime};
-use typst::syntax::{FileId, Source, VirtualPath};
+use typst::foundations::{Bytes, Datetime, Duration};
+use typst::syntax::{FileId, RootedPath, Source, VirtualPath, VirtualRoot};
 use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
 use typst::{Library, LibraryExt, World};
@@ -90,7 +90,9 @@ impl TypstWorld {
         let fonts = Self::load_system_fonts();
         let book = LazyHash::new(FontBook::from_fonts(&fonts));
 
-        let main_id = FileId::new(None, VirtualPath::new("main.typ"));
+        let main_path =
+            VirtualPath::new("main.typ").expect("main.typ is a valid normalized virtual path");
+        let main_id = FileId::new(RootedPath::new(VirtualRoot::Project, main_path));
         let source = Source::new(main_id, markup.to_string());
 
         // Buscar carpeta de packages relativa al ejecutable
@@ -130,14 +132,16 @@ impl TypstWorld {
 
     /// Resuelve la ruta de un archivo dentro de un package
     fn resolve_package_file(&self, id: FileId) -> Option<PathBuf> {
-        let package = id.package()?;
+        let VirtualRoot::Package(package) = id.root() else {
+            return None;
+        };
         let namespace = package.namespace.as_str();
         let name = package.name.as_str();
         let version = package.version.to_string();
 
         let package_dir = self.packages_root.join(namespace).join(name).join(&version);
 
-        let file_path = package_dir.join(id.vpath().as_rootless_path());
+        let file_path = package_dir.join(id.vpath().get_without_slash());
 
         if file_path.exists() {
             Some(file_path)
@@ -277,7 +281,7 @@ impl World for TypstWorld {
                 std::fs::read_to_string(&path).map_err(|_| FileError::NotFound(path.clone()))?;
             Ok(Source::new(id, content))
         } else {
-            Err(FileError::NotFound(id.vpath().as_rootless_path().into()))
+            Err(FileError::NotFound(id.vpath().get_without_slash().into()))
         }
     }
 
@@ -287,7 +291,7 @@ impl World for TypstWorld {
             let data = std::fs::read(&path).map_err(|_| FileError::NotFound(path))?;
             Ok(Bytes::new(data))
         } else {
-            Err(FileError::NotFound(id.vpath().as_rootless_path().into()))
+            Err(FileError::NotFound(id.vpath().get_without_slash().into()))
         }
     }
 
@@ -295,7 +299,7 @@ impl World for TypstWorld {
         self.fonts.get(index).cloned()
     }
 
-    fn today(&self, _offset: Option<i64>) -> Option<Datetime> {
+    fn today(&self, _offset: Option<Duration>) -> Option<Datetime> {
         let now = chrono::Local::now();
         Datetime::from_ymd(
             now.year(),

@@ -3,7 +3,6 @@
 	import { activeView } from '$lib/stores/ui';
 	import { logout, currentUser } from '$lib/stores/auth';
 	import { openTab } from '$lib/stores/tabs';
-	import { modulesStore } from '$lib/stores/modules';
 	import { onMount } from 'svelte';
 
 	// Icons
@@ -14,9 +13,8 @@
 		IdCard,
 		DoorOpen,
 		PackageCheck,
-		ScrollText,
-		Zap
-	} from 'lucide-svelte';
+		ScrollText
+	} from '@lucide/svelte';
 
 	// Components
 	import SidebarIcon from './SidebarIcon.svelte';
@@ -27,7 +25,6 @@
 	import { activePanel, openView } from '$lib/stores/sidebar';
 	import type { SidebarItem } from '../../../types/Sidebar';
 	import { can } from '$lib/logic/permissions';
-	import { ROLE_ADMIN_ID } from '$lib/types/role';
 
 	// Modals
 	import UserFormModal from '$lib/components/user/UserFormModal.svelte';
@@ -184,32 +181,7 @@
 	const currentActivePanel = $derived($activePanel);
 	const activeItem = $derived(sidebarItems.find((item) => item.id === currentActivePanel));
 
-	// Module status mapping
-	const MODULE_KEY_MAP: Record<string, string> = {
-		users: 'users',
-		blacklist: 'access_control',
-		'ingreso-visitas': 'visits',
-		gafetes: 'access_control',
-		ingresos: 'access_control',
-		'ingreso-proveedores': 'providers',
-		logs: 'reports'
-	};
-
 	function handleItemSelect(item: SidebarItem) {
-		const moduleKey = MODULE_KEY_MAP[item.id] || item.id;
-		const status = modulesStore.getStatus(moduleKey, $modulesStore);
-
-		if ((status === 'development' || status === 'maintenance') && !$currentUser?.isSuperuser) {
-			openTab({
-				componentKey: 'under-construction',
-				title: item.label,
-				id: `locked-${item.id}`,
-				data: { type: status, moduleName: item.label },
-				focusOnOpen: true
-			});
-			return;
-		}
-
 		activeView.set(item.id);
 
 		if (item.action) {
@@ -339,24 +311,6 @@
 				<SidebarIcon {item} isActive={currentActivePanel === item.id} onSelect={handleItemSelect} />
 			{/each}
 		</div>
-
-		<!-- GOD MODE Icon -->
-		{#if $currentUser?.isSuperuser}
-			<div class="mt-auto mb-2 flex justify-center">
-				<button
-					class="sidebar-icon-btn group text-yellow-500 hover:text-yellow-400"
-					title="Modo Ingeniería (GOD)"
-					onclick={() => openView('dev-settings', 'Modo Ingeniería')}
-				>
-					<Zap
-						size={24}
-						strokeWidth={2.5}
-						class="transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]"
-					/>
-					<span class="sidebar-icon-tooltip">Ingeniería</span>
-				</button>
-			</div>
-		{/if}
 
 		<div class="sidebar-bottom-actions">
 			<!-- Profile Menu -->

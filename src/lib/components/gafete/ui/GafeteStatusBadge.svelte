@@ -1,6 +1,6 @@
 <!-- src/lib/components/gafete/ui/GafeteStatusBadge.svelte -->
 <script lang="ts">
-	import { CheckCircle, PlayCircle, AlertCircle, Zap, HelpCircle, BadgeAlert } from 'lucide-svelte';
+	import { CheckCircle, PlayCircle, AlertCircle, Zap, HelpCircle, BadgeAlert } from '@lucide/svelte';
 
 	interface Props {
 		status: string;

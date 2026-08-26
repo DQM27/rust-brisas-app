@@ -12,7 +12,7 @@
 		Unlock,
 		ChevronDown,
 		Check
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import type { ExportOptions } from '$lib/types/export';
 	import {
 		MARGIN_UNITS,

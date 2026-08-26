@@ -13,7 +13,7 @@ use argon2::{
     Argon2,
 };
 use chacha20poly1305::{
-    aead::{Aead, AeadCore, KeyInit},
+    aead::{Aead, Generate, KeyInit},
     ChaCha20Poly1305, Key, Nonce,
 };
 use chrono::Local;
@@ -85,7 +85,8 @@ fn derive_key_from_password(password: &str, salt_str: &str) -> Result<Key, Backu
         .hash_password_into(password.as_bytes(), salt.as_str().as_bytes(), &mut key_buffer)
         .map_err(|e| BackupError::IO(format!("Error derivando llave: {e}")))?;
 
-    Ok(*Key::from_slice(&key_buffer))
+    Key::try_from(key_buffer.as_slice())
+        .map_err(|_| BackupError::IO("Longitud de llave derivada inválida".to_string()))
 }
 
 /// Helper: Exporta la DB a un buffer en memoria (sin escribir a disco).
@@ -135,11 +136,12 @@ fn decrypt_portable_backup(file_content: &str, password: &str) -> Result<Vec<u8>
         .map_err(|e| BackupError::IO(format!("Nonce inválido: {e}")))?;
     let ciphertext_bytes = hex::decode(&portable_file.ciphertext)
         .map_err(|e| BackupError::IO(format!("Ciphertext inválido: {e}")))?;
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    let nonce = Nonce::try_from(nonce_bytes.as_slice())
+        .map_err(|_| BackupError::IO("Longitud de nonce inválida".to_string()))?;
 
     // 4. Descifrar
     let decrypted_bytes = cipher
-        .decrypt(nonce, ciphertext_bytes.as_ref())
+        .decrypt(&nonce, ciphertext_bytes.as_ref())
         .map_err(|_| BackupError::IO("Contraseña incorrecta o archivo corrupto".to_string()))?;
 
     // 5. Validar Checksum
@@ -330,7 +332,7 @@ pub async fn backup_database_portable(
 
     // 2. Generar Salt y Nonce
     let salt = SaltString::generate(&mut OsRng);
-    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+    let nonce = Nonce::generate();
 
     // 3. Derivar llave de cifrado de la contraseña
     let key = derive_key_from_password(&password, salt.as_str())?;

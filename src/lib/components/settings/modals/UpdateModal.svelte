@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
-	import { X, RefreshCw, DownloadCloud, CheckCircle2 } from 'lucide-svelte';
+	import { X, RefreshCw, DownloadCloud, CheckCircle2 } from '@lucide/svelte';
 	import { checkAndInstallUpdate } from '$lib/services/updateService';
 	import { getVersion } from '@tauri-apps/api/app';
 	import { onMount } from 'svelte';

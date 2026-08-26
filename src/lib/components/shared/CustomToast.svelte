@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CheckCircle2, XCircle, Loader2 } from 'lucide-svelte';
+	import { CheckCircle2, XCircle, Loader2 } from '@lucide/svelte';
 
 	interface Props {
 		toast: any;

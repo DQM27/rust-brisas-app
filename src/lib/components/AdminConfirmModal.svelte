@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Shield, TriangleAlert, Lock, Eye, EyeOff, X } from 'lucide-svelte';
+	import { Shield, TriangleAlert, Lock, Eye, EyeOff, X } from '@lucide/svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { currentUser } from '$lib/stores/auth';
 

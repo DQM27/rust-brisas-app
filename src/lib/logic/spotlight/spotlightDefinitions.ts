@@ -10,7 +10,6 @@ import {
 	Contact,
 	IdCard,
 	ShieldX,
-	Trash2,
 	Plus,
 	Settings,
 	ArrowRight,
@@ -31,7 +30,7 @@ import {
 	Keyboard,
 	AlertTriangle,
 	Home
-} from 'lucide-svelte';
+} from '@lucide/svelte';
 import type { SpotlightItemDefinition } from '$lib/types/spotlight';
 
 // ============================================
@@ -344,16 +343,6 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 		keywords: ['atajos', 'teclado', 'shortcuts', 'teclas', 'personalizar', 'configurar']
 	},
 	{
-		id: 'trash-settings',
-		label: 'Papelera',
-		description: 'Gestión de elementos eliminados',
-		icon: Trash2,
-		category: 'action',
-		subCategory: 'link',
-		keywords: ['papelera', 'trash', 'eliminado', 'restaurar'],
-		permission: 'trash:view'
-	},
-	{
 		id: 'action-reindex',
 		label: 'Reindexar Búsqueda',
 		description: 'Regenerar índices de búsqueda',
@@ -422,7 +411,6 @@ export const MODULE_COMPONENT_MAP: Record<string, { componentKey: string; title:
 	'settings-export': { componentKey: 'export-settings', title: 'Configuración de Exportación' },
 	'settings-backup': { componentKey: 'backup-settings', title: 'Copias de Seguridad' },
 	'settings-spotlight': { componentKey: 'spotlight-settings', title: 'Ajustes de Spotlight' },
-	'trash-settings': { componentKey: 'trash-settings', title: 'Papelera de Reciclaje' },
 	welcome: { componentKey: 'welcome', title: 'Bienvenida' }
 };
 

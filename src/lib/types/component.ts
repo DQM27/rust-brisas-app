@@ -22,12 +22,10 @@ export type ComponentKey =
 	| 'device-settings'
 	| 'session-settings'
 	| 'export-settings'
-	| 'trash-settings'
 	| 'roles-settings'
 	| 'shortcuts-settings'
 	| 'about'
 	| 'under-construction'
-	| 'dev-settings'
 	| 'spotlight-settings'
 	| 'alerta-gafete-list'
 	| 'audit-log';

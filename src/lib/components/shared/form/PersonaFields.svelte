@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/core';
-	import { Plus, ChevronDown } from 'lucide-svelte';
+	import { Plus, ChevronDown } from '@lucide/svelte';
 
 	interface Props {
 		// Aceptamos el objeto 'form' (store), 'errors' (store), y 'constraints' (store)

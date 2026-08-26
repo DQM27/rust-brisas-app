@@ -130,7 +130,7 @@ pub fn search_index(
 
     // Ejecutar búsqueda
     let top_docs = searcher
-        .search(&query, &TopDocs::with_limit(limit))
+        .search(&query, &TopDocs::with_limit(limit).order_by_score())
         .map_err(|e| SearchError::TantivyError(format!("Error búsqueda: {e}")))?;
 
     let mut results = Vec::with_capacity(top_docs.len());

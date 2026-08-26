@@ -181,7 +181,6 @@ macro_rules! register_handlers {
             // ==========================================
             commands::config_commands::get_app_config,
             commands::config_commands::update_terminal_config,
-            commands::config_commands::update_audio_config,
             commands::config_commands::get_backup_config,
             commands::config_commands::update_backup_config,
             // ==========================================
@@ -216,11 +215,6 @@ macro_rules! register_handlers {
             // ==========================================
             commands::system_commands::get_system_idle_time,
             // ==========================================
-            // COMANDOS DE GESTIÓN DE MÓDULOS
-            // ==========================================
-            commands::module_commands::get_modules_status,
-            commands::module_commands::update_module_status,
-            // ==========================================
             // COMANDOS DE ROLES
             // ==========================================
             commands::role_commands::get_all_roles,
@@ -230,12 +224,6 @@ macro_rules! register_handlers {
             commands::role_commands::create_role,
             commands::role_commands::update_role,
             commands::role_commands::delete_role,
-            // ==========================================
-            // COMANDOS DE AUDIO
-            // ==========================================
-            commands::audio_commands::play_alert_sound,
-            commands::audio_commands::upload_custom_sound,
-            commands::audio_commands::set_use_custom_sound,
             // ==========================================
             // COMANDOS DE VALIDACIÓN
             // ==========================================

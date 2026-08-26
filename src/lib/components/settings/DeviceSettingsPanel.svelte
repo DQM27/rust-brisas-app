@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { scale } from 'svelte/transition';
 	import { onMount } from 'svelte';
-	import { Monitor, MapPin, Save, Fingerprint, Copy } from 'lucide-svelte';
+	import { Monitor, MapPin, Save, Fingerprint, Copy } from '@lucide/svelte';
 	import { message } from '@tauri-apps/plugin-dialog';
 	import { configService } from '$lib/logic/system/configService';
 

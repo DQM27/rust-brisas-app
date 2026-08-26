@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, fly, scale } from 'svelte/transition';
-	import { X, Car } from 'lucide-svelte';
+	import { X, Car } from '@lucide/svelte';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
 	import VehiculoManagerModal from '$lib/components/vehiculo/VehiculoManagerModal.svelte';
 	import type {

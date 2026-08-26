@@ -1,7 +1,7 @@
 <!-- src/lib/components/vehiculo/VehiculoManagerModal.svelte -->
 <script lang="ts">
 	import { fade, fly, slide } from 'svelte/transition';
-	import { X, Plus, Trash2, Edit2, Car, Bike, ChevronDown, Check } from 'lucide-svelte';
+	import { X, Plus, Trash2, Edit2, Car, Bike, ChevronDown, Check } from '@lucide/svelte';
 	import type { VehiculoResponse, CreateVehiculoInput, TipoVehiculo } from '$lib/types/vehiculo';
 	import { vehiculos as vehiculosApi } from '$lib/api/vehiculos';
 	import { invoke } from '@tauri-apps/api/core';

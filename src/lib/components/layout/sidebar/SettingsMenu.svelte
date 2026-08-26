@@ -1,9 +1,8 @@
 <!-- src/lib/components/layout/sidebar/SettingsMenu.svelte -->
 <script lang="ts">
-	import { Settings } from 'lucide-svelte';
+	import { Settings } from '@lucide/svelte';
 	import type { UserResponse } from '$lib/types/user';
 	import { can } from '$lib/logic/permissions';
-	import { ROLE_ADMIN_ID } from '$lib/types/role';
 	import { openView } from '$lib/stores/sidebar';
 
 	interface Props {
@@ -132,16 +131,6 @@
 				</button>
 			{/if}
 
-			{#if currentUser && ([ROLE_ADMIN_ID.toLowerCase()].includes(currentUser.roleId.toLowerCase()) || ['admin', 'administrador'].includes(currentUser.roleName.toLowerCase()))}
-				<div class="settings-menu-separator"></div>
-				<button
-					class="settings-menu-item text-red-400 hover:text-red-300"
-					onclick={() => handleAction(() => openView('trash-settings', 'Papelera de Reciclaje'))}
-				>
-					Papelera
-				</button>
-			{/if}
-
 			{#if currentUser?.isSuperuser || ['admin', 'administrador'].includes((currentUser?.roleName || '').toLowerCase())}
 				<button
 					class="settings-menu-item text-orange-400 hover:text-orange-300"
@@ -157,17 +146,6 @@
 			<button class="settings-menu-item" onclick={() => handleAction(onOpenUpdate)}>
 				Buscar Actualizaciones...
 			</button>
-
-			<!-- GOD MODE EXCLUSIVE -->
-			{#if currentUser?.isSuperuser}
-				<div class="settings-menu-separator"></div>
-				<button
-					class="settings-menu-item text-yellow-400 hover:text-yellow-300"
-					onclick={() => handleAction(() => openView('dev-settings', 'Modo Ingeniería'))}
-				>
-					⚡ Gestión de Módulos
-				</button>
-			{/if}
 
 			<button class="settings-menu-item" onclick={() => handleAction(onOpenAbout)}>
 				Acerca de Mega Brisas

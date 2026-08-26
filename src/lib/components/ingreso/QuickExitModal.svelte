@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, scale } from 'svelte/transition';
-	import { Search, CreditCard, XCircle } from 'lucide-svelte';
+	import { Search, CreditCard, XCircle } from '@lucide/svelte';
 
 	interface Props {
 		show: boolean;

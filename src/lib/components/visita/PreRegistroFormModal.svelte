@@ -19,7 +19,7 @@
 		RefreshCw,
 		Plus,
 		ChevronDown
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import PersonaFinder from '$lib/components/ingreso/shared/persona/PersonaFinder.svelte';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
 	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';

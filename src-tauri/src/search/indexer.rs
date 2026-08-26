@@ -372,7 +372,7 @@ pub fn index_lista_negra(
 
     // Crear documento usando handles pre-cargados
     let mut doc = TantivyDocument::default();
-    doc.add_text(handles.id, &lista_negra.id);
+    doc.add_text(handles.id, lista_negra.id.to_string());
     doc.add_text(handles.tipo, "lista_negra");
     doc.add_text(handles.cedula, &lista_negra.cedula);
     doc.add_text(handles.nombre, &lista_negra.nombre);

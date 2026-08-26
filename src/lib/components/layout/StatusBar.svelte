@@ -1,6 +1,6 @@
 <!-- src/lib/components/layout/StatusBar.svelte -->
 <script lang="ts">
-	import { Wifi, WifiOff } from 'lucide-svelte';
+	import { Wifi, WifiOff } from '@lucide/svelte';
 	import { online } from '$lib/stores/network';
 
 	// Clases reactivas para el estado de conexión

@@ -10,7 +10,6 @@
 	import { isAuthenticated, currentUser } from '$lib/stores/auth';
 	import { initNetworkMonitor } from '$lib/stores/network';
 	import { setupWizardVisible } from '$lib/stores/ui';
-	import { modulesStore } from '$lib/stores/modules';
 	import { needsSetup } from '$lib/logic/keyring/keyringService';
 	import { windowService } from '$lib/logic/system/windowService';
 	import { auditService } from '$lib/logic/audit/auditService';
@@ -33,7 +32,6 @@
 	onMount(() => {
 		(async () => {
 			try {
-				await modulesStore.load();
 				const setupRes = await needsSetup();
 				$setupWizardVisible = setupRes.ok ? setupRes.data : false;
 			} catch (e) {

@@ -11,7 +11,7 @@
 		SearchX,
 		ChevronRight,
 		RefreshCw
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { shortcutRegistry, shortcutCommand, clearCommand } from '$lib/shortcuts';
 	import PersonaFinder from '$lib/components/ingreso/shared/persona/PersonaFinder.svelte';
 
@@ -30,7 +30,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { vehiculos } from '$lib/api/vehiculos';
 	import type { VehiculoResponse } from '$lib/types/vehiculo';
-	import { PersonStanding, Car, Bike, Check } from 'lucide-svelte';
+	import { PersonStanding, Car, Bike, Check } from '@lucide/svelte';
 
 	// Props
 	interface Props {
@@ -372,7 +372,6 @@
 		try {
 			validationResult = await ingresoVisitaService.validarIngreso(ced);
 			if (validationResult && !validationResult.puedeIngresar) {
-				invoke('play_alert_sound');
 				toastService.error(validationResult.motivoRechazo || 'Persona no autorizada');
 			}
 		} catch (e) {

@@ -4,7 +4,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { toastService } from '$lib/services/toastService';
-	import { AlertCircle, UserPlus, Pencil, Trash2, X, RotateCcw, History } from 'lucide-svelte';
+	import { AlertCircle, UserPlus, Pencil, Trash2, X, RotateCcw, History } from '@lucide/svelte';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -266,15 +266,15 @@
 		}
 
 		openConfirm({
-			title: 'Mover a Papelera',
-			message: `¿Estás seguro de mover al usuario "${user.nombre}" a la papelera?`,
+			title: 'Archivar usuario',
+			message: `¿Estás seguro de archivar al usuario "${user.nombre}"?`,
 			type: 'danger',
-			confirmText: 'Mover a Papelera',
+			confirmText: 'Archivar',
 			onConfirm: async () => {
 				const toastId = toastService.loading('Eliminando...');
 				const result = await userService.deleteUser(user.id);
 				if (result.ok) {
-					toastService.success('Usuario enviado a papelera', { id: toastId });
+					toastService.success('Usuario archivado', { id: toastId });
 					loadUsers();
 				} else {
 					toastService.error(result.error, { id: toastId });
@@ -323,7 +323,7 @@
 			title: 'Eliminación Múltiple',
 			message: `¿Estás seguro de que quieres realizar esta acción? ${message}`,
 			type: 'danger',
-			confirmText: 'Mover a Papelera',
+			confirmText: 'Archivar',
 			onConfirm: async () => {
 				const toastId = toastService.loading('Procesando...');
 				let errors = 0;
@@ -481,7 +481,7 @@
 						{#if showArchived}
 							<History size={14} /> Ver Activos
 						{:else}
-							<Trash2 size={14} /> Papelera
+							<Trash2 size={14} /> Archivados
 						{/if}
 					</button>
 

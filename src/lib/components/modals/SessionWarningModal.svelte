@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { showLogoutWarning } from '$lib/stores/sessionStore';
 	import { fade, fly } from 'svelte/transition';
-	import { AlertTriangle, Clock } from 'lucide-svelte';
+	import { AlertTriangle, Clock } from '@lucide/svelte';
 
 	function dismiss() {
 		// Just moving the mouse triggers recordActivity which clears the idleness,

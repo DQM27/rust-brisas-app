@@ -11,7 +11,7 @@
 		Shield,
 		Palette,
 		Clock
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { openView, activePanel } from '../../../../stores/sidebar';
 
 	function handleKeydown(e: KeyboardEvent, action: () => void) {

@@ -1,7 +1,7 @@
 <!-- src/lib/components/gafete/modals/ResolveAlertModal.svelte -->
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
-	import { X } from 'lucide-svelte';
+	import { X } from '@lucide/svelte';
 
 	interface Props {
 		show: boolean;

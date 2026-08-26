@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, scale } from 'svelte/transition';
-	import { Search, User, CreditCard, XCircle } from 'lucide-svelte';
+	import { Search, User, CreditCard, XCircle } from '@lucide/svelte';
 	import { invoke } from '@tauri-apps/api/core';
 
 	interface Props {

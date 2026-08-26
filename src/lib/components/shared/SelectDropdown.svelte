@@ -1,5 +1,5 @@
 <script lang="ts" generics="T">
-	import { ChevronDown, Check } from 'lucide-svelte';
+	import { ChevronDown, Check } from '@lucide/svelte';
 	import { scale } from 'svelte/transition';
 
 	interface Option<T> {

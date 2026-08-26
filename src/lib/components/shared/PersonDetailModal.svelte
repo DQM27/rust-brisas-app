@@ -12,7 +12,7 @@
 		MapPin,
 		LogOut,
 		Calendar
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import type { IngresoResponse } from '$lib/types/ingreso';
 	import { fade, scale } from 'svelte/transition';
 

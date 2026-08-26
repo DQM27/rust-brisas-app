@@ -35,6 +35,9 @@ export default tseslint.config(
 			parserOptions: {
 				parser: tseslint.parser
 			}
+		},
+		rules: {
+			'@typescript-eslint/no-unused-vars': 'off'
 		}
 	},
 	{

@@ -2,7 +2,7 @@
 <!-- Modal para agregar/editar personas en lista negra (Validación Zod + Superforms) -->
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
-	import { X, User, CheckCircle, XCircle, ChevronDown, MonitorStop, Plus } from 'lucide-svelte';
+	import { X, User, CheckCircle, XCircle, ChevronDown, MonitorStop, Plus } from '@lucide/svelte';
 	import { shortcutRegistry, shortcutCommand, clearCommand } from '$lib/shortcuts';
 	import { get } from 'svelte/store';
 	import { currentUser } from '$lib/stores/auth';

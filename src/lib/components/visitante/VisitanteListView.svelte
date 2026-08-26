@@ -3,7 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { toastService } from '$lib/services/toastService';
-	import { Plus, Pencil, Trash2, X, RotateCcw, Undo2, History } from 'lucide-svelte';
+	import { Plus, Pencil, Trash2, X, RotateCcw, Undo2, History } from '@lucide/svelte';
 	// import { ask } from '@tauri-apps/plugin-dialog'; <-- Removed
 
 	// Components
@@ -424,7 +424,7 @@
 						{#if showArchived}
 							<History size={14} /> Ver Activos
 						{:else}
-							<Trash2 size={14} /> Papelera
+							<Trash2 size={14} /> Archivados
 						{/if}
 					</button>
 

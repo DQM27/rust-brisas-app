@@ -10,7 +10,7 @@
 		Copy,
 		FileSpreadsheet,
 		Table2
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { exportProfileStore } from '$lib/stores/exportProfileStore';

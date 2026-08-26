@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Shield, Key, Check, RefreshCw, AlertCircle, X, Info } from 'lucide-svelte';
+	import { Shield, Key, Check, RefreshCw, AlertCircle, X, Info } from '@lucide/svelte';
 	import { fade } from 'svelte/transition';
 	import { ask, save, open, message } from '@tauri-apps/plugin-dialog';
 	import {

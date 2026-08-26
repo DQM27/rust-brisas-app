@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { DownloadCloud, RefreshCw, CheckCircle2 } from 'lucide-svelte';
+	import { DownloadCloud, RefreshCw, CheckCircle2 } from '@lucide/svelte';
 	import { scale } from 'svelte/transition';
 	import { checkAndInstallUpdate } from '$lib/services/updateService';
 	import { getVersion } from '@tauri-apps/api/app';
