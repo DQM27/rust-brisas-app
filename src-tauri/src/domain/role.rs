@@ -64,10 +64,25 @@ pub fn has_god_authority(user_id: Option<&str>) -> bool {
     }
 
     if let Some(id) = user_id {
-        return id == GOD_ID;
+        return normalized_record_key(id) == GOD_ID;
     }
 
     false
+}
+
+/// Indica si el identificador corresponde al rol administrador del sistema.
+pub fn has_admin_authority(role_id: &str) -> bool {
+    normalized_record_key(role_id) == ROLE_ADMIN_ID
+}
+
+/// Extrae la clave de IDs serializados como `table:id`, `table:⟨id⟩` o `id`.
+fn normalized_record_key(record_id: &str) -> &str {
+    record_id
+        .trim()
+        .split_once(':')
+        .map_or(record_id.trim(), |(_, key)| key)
+        .trim_start_matches(['⟨', '<'])
+        .trim_end_matches(['⟩', '>'])
 }
 
 /// Estructura RAII para garantizar la desactivación automática del God Mode al salir de un scope.

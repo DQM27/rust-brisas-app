@@ -6,7 +6,7 @@
 //! ## Características
 //! - Herencia de roles recursiva (hasta 10 niveles).
 //! - Caché reactiva de permisos mediante `HashSet`.
-//! - Integración con Auditoría (Trazas de acceso denegado/bypass).
+//! - Resolución uniforme de privilegios para usuarios y roles del sistema.
 
 use crate::db::surrealdb_role_queries; // Usamos queries ya implementadas
 /// Capa de Dominio no necesaria aquí directamente si usamos `has_god_authority`
@@ -106,7 +106,9 @@ pub async fn get_visible_modules(
     role_id: &str,
 ) -> Result<Vec<Module>, SurrealDbError> {
     // La autoridad de God Mode (por estado o por identidad) ve todo
-    if crate::domain::role::has_god_authority(Some(user_id)) {
+    if crate::domain::role::has_god_authority(Some(user_id))
+        || crate::domain::role::has_admin_authority(role_id)
+    {
         return Ok(Module::all());
     }
 
@@ -146,8 +148,10 @@ pub async fn check_permission(
     action: Action,
 ) -> Result<(), AuthError> {
     // La autoridad de God Mode (por estado o por identidad) bypassa todo
-    if crate::domain::role::has_god_authority(Some(user_id)) {
-        info!(target: "audit", "[GOD_MODE] bypass para {}:{}", module.as_str(), action.as_str());
+    if crate::domain::role::has_god_authority(Some(user_id))
+        || crate::domain::role::has_admin_authority(role_id)
+    {
+        info!("Bypass de rol privilegiado para {}:{}", module.as_str(), action.as_str());
         return Ok(());
     }
 
@@ -159,7 +163,7 @@ pub async fn check_permission(
     if has {
         Ok(())
     } else {
-        warn!(target: "audit", "[PERM_DENIED] user={} perm={}:{}", user_id, module.as_str(), action.as_str());
+        warn!("Permiso denegado: user={} perm={}:{}", user_id, module.as_str(), action.as_str());
         Err(AuthError::PermissionDenied)
     }
 }

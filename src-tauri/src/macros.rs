@@ -49,11 +49,11 @@ macro_rules! require_perm {
         }
     }};
 
-    // Variante con mensaje de auditoría
+    // Variante con contexto descriptivo para el log de aplicación
     ($state:expr, $perm:expr, $audit_msg:expr) => {{
         let session_res = require_perm!($state, $perm);
         if let Ok(ref session) = session_res {
-             log::info!(target: "audit", "[PERM] user={} email={} perm={} msg={}", session.id, session.email, $perm, $audit_msg);
+             log::info!("[PERM] user={} email={} perm={} msg={}", session.id, session.email, $perm, $audit_msg);
         }
         session_res
     }};
